@@ -3,6 +3,34 @@ entries:
   scidx-helm:
   - apiVersion: v2
     appVersion: 0.1.0
+    created: "2026-03-24T22:36:01.607158199Z"
+    dependencies:
+    - alias: ndp-ep-api
+      condition: ndp-ep-api.enabled
+      name: ndp-ep-api
+      repository: file://./ndp-ep-api
+      version: 0.1.0
+    - condition: ckan.enabled
+      name: ckan
+      repository: file://./ckan
+      version: v4.0.1
+    - condition: ndp-jupyterhub.enabled
+      name: ndp-jupyterhub
+      repository: file://./ndp-jupyterhub
+      version: 0.1.0
+    - condition: kafka-kraft.enabled
+      name: kafka-kraft
+      repository: file://./kafka-kraft
+      version: 0.1.0
+    description: Helm chart for SciDx (CKAN, JupyterHub, NDP Endpoint API, Kafka).
+    digest: f2b5e38969ad3c0557b8e006cc6a93eeb01a6a8d6bc74875b54e630bbf5f4a6c
+    name: scidx-helm
+    type: application
+    urls:
+    - https://github.com/sci-ndp/scidx-helm/releases/download/scidx-helm-0.0.2/scidx-helm-0.0.2.tgz
+    version: 0.0.2
+  - apiVersion: v2
+    appVersion: 0.1.0
     created: "2026-03-24T22:16:10.233719534Z"
     dependencies:
     - alias: ndp-ep-api
@@ -29,4 +57,4 @@ entries:
     urls:
     - https://github.com/sci-ndp/scidx-helm/releases/download/scidx-helm-0.0.1/scidx-helm-0.0.1.tgz
     version: 0.0.1
-generated: "2026-03-24T22:16:10.233730384Z"
+generated: "2026-03-24T22:36:01.607176865Z"
