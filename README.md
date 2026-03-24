@@ -5,6 +5,16 @@ helm dep update ./kafka-kraft
 helm dep update ./jupyterhub-helm
 helm dep update ./ckan-helm
 ```
+## install:
+```
+helm upgrade --install scidx scidx/scidx-helm \
+  -f values.yaml \
+  --namespace scidx \
+  --create-namespacc
+```
+
+
+## local dev:
 ### install
 ```
 helm template scidx . -f values.yaml -n scidx > ../ckan-debug
