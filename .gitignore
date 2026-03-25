@@ -9,6 +9,7 @@ Chart.lock.yaml
 .helm/
 .helmcache/
 .helmignore
+!helm/.helmignore
 */requirements.lock
 
 # Helm values file
