@@ -7,23 +7,35 @@ jupyterhub:
     extraEnv:
       JUPYTERHUB_METRICS_API_KEY: a81e4f556c8f414df20e6294543451fc
       NDP_JUPYTERHUB_NAMESPACE:
-      NDP_KEYCLOAK_URL: https://idp.nationaldataplatform.org
+        valueFrom:
+          configMapKeyRef:
+            name: hub-cluster-config
+            key: namespace
+      NDP_KEYCLOAK_URL:
+        valueFrom:
+          configMapKeyRef:
+            name: hub-cluster-config
+            key: keycloakUrl
       NDP_KEYCLOAK_REALM: NDP
-      PVC_STORAGE_CLASS: 
+      PVC_STORAGE_CLASS:
+        valueFrom:
+          configMapKeyRef:
+            name: hub-cluster-config
+            key: storageClass
     existingSecret: jupyterhub-secret # Passing keycloak client_id and client_secret into hub server
     config:
       GenericOAuthenticator:
-        oauth_callback_url: https://jhub.example.com/jupyter/hub/oauth_callback
-        logout_redirect_url: https://idp.nationaldataplatform.org/realms/NDP/protocol/openid-connect/logout?post_logout_redirect_uri=https://jhub.example.com/jupyter&client_id=ndp_endpoint_jhub
+        # oauth_callback_url, logout_redirect_url, client_id, client_secret,
+        # allow_all, allowed_groups, and admin_users are written at deploy time
+        # by the federation-fetch pre-install Job into the jupyterhub-secret
+        # (loaded via hub.existingSecret above). Do not set them here —
+        # they would only apply as fallbacks if the secret is absent.
         login_service: keycloak
         username_claim: preferred_username
         userdata_params:
           state: state
-        allow_all: False
-        allowed_groups: ["jhub_user"]
         auto_login: True
         enable_auth_state: True
-        admin_users: ["admin@example.com"]
         scope:
           - openid
           - profile
@@ -55,7 +67,12 @@ jupyterhub:
         memory: 512Mi
     networkPolicy:
       enabled: false
-    extraConfig: {}
+    extraConfig:
+      storage-class: |
+        import os
+        _sc = os.environ.get('PVC_STORAGE_CLASS', '')
+        if _sc:
+            c.KubeSpawner.storage_class = _sc
     # declare a volume backed by jupyterhub-spawner cm
     extraVolumes:
       - name: spawner
@@ -138,10 +155,12 @@ jupyterhub:
       enabled: false
 
   ingress:
-    enabled: true
+    # Disabled: the ndp-jupyterhub/templates/ingress.yaml template creates the Ingress
+    # using global.clusterHost when it is set, which is the recommended path.
+    # Set enabled: true and provide hosts[] here only for manual override.
+    enabled: false
     ingressClassName: public
-    hosts:
-      - jhub.example.com
+    hosts: []
     # default path: host/{jupyterhub.hub.baseUrl}/{pathSuffix}
     pathSuffix: ""
     # Additional path to route to hub (when using microk8s ingress addon):

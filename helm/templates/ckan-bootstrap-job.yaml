@@ -1,0 +1,121 @@
+{{- if .Values.ckanBootstrap.enabled }}
+# Post-install/post-upgrade Job that bootstraps the CKAN API token and injects
+# it into the ndp-ep-api deployment.
+#
+# Lifecycle:
+#   hook-weight 0    → runs after RBAC (weight -5)
+#   hook-succeeded   → Job is deleted on success (keeps cluster tidy)
+#   before-hook-creation → old Job is deleted before the next run starts
+#
+# The Job is idempotent: if CKAN_API_KEY is already non-empty in the env Secret
+# it exits 0 immediately without touching anything.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ckan-bootstrap
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "0"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  # Allow up to 2 retries in case of transient failures (e.g. CKAN not ready yet)
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: ckan-bootstrap
+      restartPolicy: Never
+      containers:
+        - name: bootstrap
+          image: "{{ .Values.ckanBootstrap.image.repository }}:{{ .Values.ckanBootstrap.image.tag }}"
+          imagePullPolicy: {{ .Values.ckanBootstrap.image.pullPolicy }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+
+              NAMESPACE="{{ .Release.Namespace }}"
+              RELEASE="{{ .Release.Name }}"
+              EP_API_SECRET="{{ .Values.ckanBootstrap.epApiSecretName }}"
+              CKAN_TOKEN_SECRET="{{ .Values.ckanBootstrap.ckanTokenSecretName }}"
+              
+              CKAN_SYSADMIN="$(kubectl get secret ckancredentials -n "${NAMESPACE}" \
+                -o jsonpath='{.data.sysadminName}' | base64 -d)"
+
+              # ------------------------------------------------------------------
+              # Wait for CKAN pod
+              # ------------------------------------------------------------------
+              echo "==> Waiting for CKAN pod to be Ready (timeout 5m)..."
+              kubectl wait pod \
+                --namespace "${NAMESPACE}" \
+                --selector "app.kubernetes.io/name=ckan,app.kubernetes.io/instance=${RELEASE}" \
+                --for condition=Ready \
+                --timeout=300s
+
+              CKAN_POD="$(kubectl get pod -n "${NAMESPACE}" \
+                -l "app.kubernetes.io/name=ckan,app.kubernetes.io/instance=${RELEASE}" \
+                -o jsonpath='{.items[0].metadata.name}')"
+              echo "==> CKAN pod: ${CKAN_POD}"
+
+              # ------------------------------------------------------------------
+              # Locate ckan.ini inside the CKAN container
+              # ------------------------------------------------------------------
+              echo "==> Locating ckan.ini..."
+              CKAN_INI=""
+              for candidate in /app/production.ini /srv/app/ckan.ini /srv/app/production.ini /etc/ckan/ckan.ini /etc/ckan/production.ini /etc/ckan/default/ckan.ini; do
+                if kubectl exec -n "${NAMESPACE}" "${CKAN_POD}" -- test -f "${candidate}" 2>/dev/null; then
+                  CKAN_INI="${candidate}"
+                  break
+                fi
+              done
+              [ -n "${CKAN_INI}" ] || { echo "ERROR: ckan.ini not found in CKAN container"; exit 1; }
+              echo "==> ckan.ini: ${CKAN_INI}"
+
+              # ------------------------------------------------------------------
+              # Generate sysadmin API token
+              # ------------------------------------------------------------------
+              echo "==> Generating CKAN sysadmin API token..."
+              RAW_OUTPUT="$(kubectl exec -n "${NAMESPACE}" "${CKAN_POD}" -- \
+                bash -c "ckan -c '${CKAN_INI}' user token add '${CKAN_SYSADMIN}' deploy_key 2>/dev/null" \
+                || true)"
+
+              CKAN_API_KEY="$(printf '%s' "${RAW_OUTPUT}" \
+                | tr -cd '\11\12\15\40-\176' \
+                | grep -Eo 'eyJ[0-9a-zA-Z._-]{30,}' \
+                | head -n1)"
+
+              if [ -z "${CKAN_API_KEY}" ]; then
+                echo "ERROR: Could not extract a CKAN API token. Raw output was:"
+                printf '%s\n' "${RAW_OUTPUT}"
+                exit 1
+              fi
+              echo "==> Token generated."
+
+              # ------------------------------------------------------------------
+              # Patch Secrets
+              # ------------------------------------------------------------------
+              echo "==> Patching ${EP_API_SECRET} (CKAN_API_KEY)..."
+              kubectl patch secret "${EP_API_SECRET}" -n "${NAMESPACE}" \
+                --type=merge \
+                -p "{\"stringData\":{\"CKAN_API_KEY\":\"${CKAN_API_KEY}\"}}"
+
+              echo "==> Patching ${CKAN_TOKEN_SECRET} (sysadminApiToken)..."
+              kubectl patch secret "${CKAN_TOKEN_SECRET}" -n "${NAMESPACE}" \
+                --type=merge \
+                -p "{\"stringData\":{\"sysadminApiToken\":\"${CKAN_API_KEY}\"}}"
+
+              # ------------------------------------------------------------------
+              # Rollout-restart ndp-ep-api so it loads the new CKAN_API_KEY
+              # ------------------------------------------------------------------
+              echo "==> Finding ndp-ep-api deployment..."
+              EP_API_DEPLOY="$(kubectl get deployment -n "${NAMESPACE}" \
+                -l "app.kubernetes.io/name=ndp-ep-api,app.kubernetes.io/instance=${RELEASE}" \
+                -o jsonpath='{.items[0].metadata.name}')"
+
+              echo "==> Restarting deployment/${EP_API_DEPLOY}..."
+              kubectl rollout restart "deployment/${EP_API_DEPLOY}" -n "${NAMESPACE}"
+              kubectl rollout status "deployment/${EP_API_DEPLOY}" -n "${NAMESPACE}" --timeout=120s
+
+              echo "==> Bootstrap complete!"
+{{- end }}

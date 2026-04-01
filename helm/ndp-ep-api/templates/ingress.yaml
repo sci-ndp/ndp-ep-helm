@@ -1,7 +1,8 @@
 {{- if .Values.ingress.enabled -}}
 {{- $serviceName := .Values.service.name | default (printf "%s-service" (include "ndp-ep-api.fullname" .)) -}}
 {{- $ingressName := .Values.ingress.name | default (printf "%s-ingress" (include "ndp-ep-api.fullname" .)) -}}
-{{- $path := .Values.ingress.path | default .Values.rootPath.value -}}
+{{- $apiPath := .Values.global.clusterApiPath | default "/api" -}}
+{{- $uiPath := .Values.global.clusterUiPath | default "/ui" -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -13,18 +14,25 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  ingressClassName: {{ .Values.ingress.className }}
+  ingressClassName: {{ .Values.global.clusterIngressClass | default "public" | quote }}
   rules:
-    - host: {{ .Values.ingress.host }}
+    - host: {{ .Values.global.clusterHost | default .Values.ingress.host }}
       http:
         paths:
-          - path: {{ $path }}
+          - path: {{ $apiPath }}
             pathType: {{ .Values.ingress.pathType }}
             backend:
               service:
                 name: {{ $serviceName }}
                 port:
                   number: {{ .Values.service.port }}
+          # - path: {{ $uiPath }}
+          #   pathType: {{ .Values.ingress.pathType }}
+          #   backend:
+          #     service:
+          #       name: {{ $serviceName }}
+          #       port:
+          #         number: {{ .Values.service.port }}
   {{- with .Values.ingress.tls }}
   tls:
     {{- toYaml . | nindent 4 }}

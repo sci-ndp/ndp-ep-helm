@@ -2,30 +2,30 @@ apiVersion: v2
 name: scidx-helm
 description: Helm chart for SciDx (CKAN, JupyterHub, NDP Endpoint API, Kafka).
 type: application
-version: 0.0.4
+version: 0.0.5
 appVersion: "0.1.0"
 dependencies:
   # NDP Endpoint API
   - name: ndp-ep-api
-    version: 0.1.0
+    version: 0.1.1
     repository: "file://./ndp-ep-api"
     alias: ndp-ep-api
     condition: ndp-ep-api.enabled
 
   # fork from keitaroinc ckan-helm upstream chart
   - name: ckan
-    version: "v4.0.1"
+    version: "v4.0.2"
     repository: "file://./ckan"
     condition: ckan.enabled
   
   # NDP Generic JupyterHub (non-nrp cluster specific)
   - name: ndp-jupyterhub
-    version: "0.1.0"
+    version: "0.1.1"
     repository: "file://./ndp-jupyterhub"
     condition: ndp-jupyterhub.enabled
 
   # Strimzi Kafka Operator with KRaft mode
   - name: kafka-kraft
-    version: "0.1.0"
+    version: "0.1.1"
     repository: "file://./kafka-kraft"
     condition: kafka-kraft.enabled

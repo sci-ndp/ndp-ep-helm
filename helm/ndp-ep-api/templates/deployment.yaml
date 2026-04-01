@@ -22,25 +22,32 @@ spec:
         - name: {{ include "ndp-ep-api.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          # command: ["/bin/sh", "-c"]
+          # args:
+          #   - |
+          #     find /app/ui/build -name "*.js" \
+          #       -exec sed -i "s|__NDP_EP_API_URL__|${REACT_APP_API_BASE_URL}|g" {} \;
+          #     exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf
           ports:
             - containerPort: {{ .Values.containerPort }}
+          # env:
+          #   - name: REACT_APP_API_BASE_URL
+          #     value: {{ printf "https://%s%s" (.Values.global.clusterHost | default "localhost") (.Values.global.clusterApiPath | default "/api") | quote }}
           {{- if or .Values.envSecret.enabled .Values.rootPath.enabled }}
           envFrom:
             {{- if .Values.envSecret.enabled }}
             - secretRef:
                 name: {{ .Values.envSecret.name }}
             {{- end }}
+            {{- /* federation-config is written by the pre-install federation-fetch Job.
+                   optional:true so manual installs (no federation.configId) still work. */}}
+            - configMapRef:
+                name: federation-config
+                optional: true
             {{- if .Values.rootPath.enabled }}
             - configMapRef:
                 name: {{ .Values.rootPath.configMap.name }}
             {{- end }}
           {{- end }}
-          env:
-            - name: AUTH_API_URL
-              value: {{ default .Values.global.authApiUrl .Values.authApiUrl | quote }}
-            - name: ENABLE_GROUP_BASED_ACCESS
-              value: {{ default .Values.global.enableGroupBasedAccess .Values.enableGroupBasedAccess | quote }}
-            - name: GROUP_NAMES
-              value: {{ default .Values.global.groupNames .Values.groupNames | quote }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}

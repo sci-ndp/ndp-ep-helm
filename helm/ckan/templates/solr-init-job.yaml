@@ -23,7 +23,8 @@ spec:
         imagePullPolicy: {{ .Values.image.pullPolicy }}
         env:
         - name: CKAN_SOLR_URL
-          value: {{ .Values.ckan.solr }}
+          # value: {{ .Values.ckan.solr }}
+          value: {{ .Values.ckan.solrUrl }}
         - name: SOLR_ADMIN_USERNAME
           value: {{ .Values.solr.auth.adminUsername }}
         - name: SOLR_ADMIN_PASSWORD

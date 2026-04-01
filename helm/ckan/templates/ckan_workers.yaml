@@ -75,7 +75,8 @@ spec:
             exit 1
         env:
           - name: CKAN_SOLR_URL
-            value: {{ $.Values.ckan.solr }}
+            # value: {{ $.Values.ckan.solr }}
+            value: {{ $.Values.ckan.solrUrl }}
           - name: CKAN_SOLR_USER
             value: {{ $.Values.solr.auth.adminUsername }}
           - name: CKAN_SOLR_PASSWORD
@@ -112,7 +113,10 @@ spec:
             - name: UWSGI_PROC_NO
               value: {{ $.Values.ckan.uwsg_num | quote }}
             - name: CKAN_SYSADMIN_NAME
-              value: {{ $.Values.ckan.sysadminName }}
+              valueFrom:
+                secretKeyRef:
+                  name: ckancredentials
+                  key: sysadminName
             - name: CKAN_SYSADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -179,13 +183,15 @@ spec:
               value: {{ $.Values.hpa.sessions.session_type | quote }}
             {{ end }}
             - name: CKAN_SOLR_URL
-              value: {{ $.Values.ckan.solr }}
+              # value: {{ $.Values.ckan.solr }}
+              value: {{ $.Values.ckan.solrUrl }} 
             - name: CKAN_SOLR_USER
               value: {{ $.Values.solr.auth.adminUsername }}
             - name: CKAN_SOLR_PASSWORD
               value: {{ $.Values.solr.auth.adminPassword }}
             - name: CKAN__REDIS__URL
-              value: {{ $.Values.ckan.redis }}
+              # value: {{ $.Values.ckan.redis }}
+              value: {{ $.Values.ckan.redisUrl }}
             - name: CKANEXT__SPATIAL__SEARCH_BACKEND
               value: {{ $.Values.ckan.spatialBackend }}
             - name: CKAN__LOCALES_OFFERED

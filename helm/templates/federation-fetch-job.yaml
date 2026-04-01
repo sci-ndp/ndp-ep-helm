@@ -1,0 +1,229 @@
+{{- if .Values.federation.configId }}
+# Pre-install/pre-upgrade Job.
+# Fetches the NDP Endpoint configuration from the Federation API and writes:
+#   - ConfigMap "federation-config"  → all EP API env vars (read by ndp-ep-api at startup)
+#   - Secret  "jupyterhub-secret"    → full JupyterHub OAuth config (read via existingSecret)
+#
+# Because this is a pre-install hook it runs BEFORE any Deployment is created, so
+# JupyterHub and the EP API both start with the correct configuration on the first try.
+#
+# On upgrade the Job re-fetches federation config. If the federation doc has changed
+# (e.g. new OAuth client_id), the ConfigMap and Secret are patched and affected pods
+# should be restarted manually (or via a separate post-upgrade hook).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: federation-fetch
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  backoffLimit: 2
+  template:
+    spec:
+      serviceAccountName: federation-fetch
+      restartPolicy: Never
+      containers:
+        - name: fetch
+          image: "{{ .Values.ckanBootstrap.image.repository }}:{{ .Values.ckanBootstrap.image.tag }}"
+          imagePullPolicy: {{ .Values.ckanBootstrap.image.pullPolicy }}
+          env:
+            - name: FEDERATION_URL
+              value: {{ include "scidx.federationUrl" . | quote }}
+            - name: CONFIG_ID
+              value: {{ .Values.federation.configId | quote }}
+            - name: NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+            - name: CLUSTER_HOST
+              value: {{ .Values.global.clusterHost | quote }}
+            - name: CLUSTER_KAFKA_PORT
+              value: {{ .Values.global.clusterKafkaPort | default 31090 | toString | quote }}
+            - name: CLUSTER_CKAN_PATH
+              value: {{ .Values.global.clusterCkanPath | default "/ckan" | quote }}
+            - name: CLUSTER_JUPYTER_PATH
+              value: {{ .Values.global.clusterJupyterPath | default "/jupyter" | quote }}
+            - name: CLUSTER_IDP_HOST
+              value: {{ include "scidx.clusterIdpHost" . | quote }}
+            - name: RELEASE_NAMESPACE
+              value: {{ .Release.Namespace | quote }}
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -euo pipefail
+
+              # ------------------------------------------------------------------
+              # 1. Fetch federation config
+              # ------------------------------------------------------------------
+              echo "==> Fetching federation config: ${FEDERATION_URL}/ep/${CONFIG_ID}"
+              CONFIG_JSON="$(curl -fsS "${FEDERATION_URL}/ep/${CONFIG_ID}")"
+
+              # ------------------------------------------------------------------
+              # 2. Parse federation fields
+              # ------------------------------------------------------------------
+              EP_NAME="$(echo "$CONFIG_JSON"       | jq -r '.ep_name        // "My-EP"')"
+              ORGANIZATION="$(echo "$CONFIG_JSON"  | jq -r '.organization   // "My-Organization"')"
+              CKAN_NAME="$(echo "$CONFIG_JSON"      | jq -r '.ckan_name      // "ckan_admin"')"
+              CKAN_PASSWORD="$(echo "$CONFIG_JSON"  | jq -r '.ckan_password  // ""')"
+              CLIENT_ID="$(echo "$CONFIG_JSON"      | jq -r '.client_id      // ""')"
+              CLIENT_SECRET="$(echo "$CONFIG_JSON"  | jq -r '.client_secret  // ""')"
+              REALM_NAME="$(echo "$CONFIG_JSON"     | jq -r '.realm_name     // "NDP"')"
+              STREAMING="$(echo "$CONFIG_JSON"      | jq -r '.streaming      // "false"')"
+              JHUB="$(echo "$CONFIG_JSON"           | jq -r '.jhub            // "false"')"
+              GROUP_NAME="$(echo "$CONFIG_JSON"     | jq -r '.group_name     // ""')"
+              POC="$(echo "$CONFIG_JSON"            | jq -r '.poc             // ""')"
+              PUBLIC="$(echo "$CONFIG_JSON"         | jq -r '.public          // "true"')"
+              PRE_CKAN_URL="$(echo "$CONFIG_JSON"   | jq -r '.pre_ckan_url   // ""')"
+              PRE_CKAN_KEY="$(echo "$CONFIG_JSON"   | jq -r '.pre_ckan_key   // ""')"
+              JUPYTER_URL="$(echo "$CONFIG_JSON"    | jq -r '.jupyter_url    // ""')"
+
+              # ------------------------------------------------------------------
+              # 3. Derive values
+              # ------------------------------------------------------------------
+              KAFKA_CONNECTION="False"
+              if [ "$STREAMING" = "true" ] || [ "$STREAMING" = "True" ]; then
+                KAFKA_CONNECTION="True"
+              fi
+
+              USE_JUPYTERLAB="False"
+              if [ "$JHUB" = "true" ] || [ "$JHUB" = "True" ]; then
+                USE_JUPYTERLAB="True"
+              fi
+
+              PRE_CKAN_ENABLED="False"
+              if [ -n "$PRE_CKAN_URL" ] && [ "$PRE_CKAN_URL" != "null" ] && \
+                 [ -n "$PRE_CKAN_KEY" ] && [ "$PRE_CKAN_KEY" != "null" ]; then
+                PRE_CKAN_ENABLED="True"
+              fi
+
+              ENABLE_GROUP_ACCESS="true"
+              if [ "$PUBLIC" = "true" ] || [ "$PUBLIC" = "True" ]; then
+                ENABLE_GROUP_ACCESS="false"
+              fi
+
+              GROUP_NAMES=""
+              if [ -n "$GROUP_NAME" ] && [ "$GROUP_NAME" != "null" ]; then
+                CLEAN="${GROUP_NAME#/}"
+                GROUP_NAMES="${CLEAN},/${CLEAN}"
+              fi
+
+              if [ -z "$JUPYTER_URL" ] || [ "$JUPYTER_URL" = "null" ]; then
+                JUPYTER_URL="https://${CLUSTER_HOST}${CLUSTER_JUPYTER_PATH}/"
+              fi
+
+              KC_BASE="https://${CLUSTER_IDP_HOST}/realms/${REALM_NAME}/protocol/openid-connect"
+              AUTH_API_URL="https://${CLUSTER_IDP_HOST}/temp/information"
+              JHUB_CALLBACK_URL="https://${CLUSTER_HOST}${CLUSTER_JUPYTER_PATH}/hub/oauth_callback"
+              JHUB_LOGOUT_URL="${KC_BASE}/logout?post_logout_redirect_uri=https://${CLUSTER_HOST}${CLUSTER_JUPYTER_PATH}&client_id=${CLIENT_ID}"
+
+              echo "==> Parsed: EP_NAME=${EP_NAME} ORGANIZATION=${ORGANIZATION} KAFKA_CONNECTION=${KAFKA_CONNECTION} USE_JUPYTERLAB=${USE_JUPYTERLAB}"
+
+              # ------------------------------------------------------------------
+              # 4. Write federation-config ConfigMap (all EP API env vars)
+              # ------------------------------------------------------------------
+              echo "==> Writing ConfigMap federation-config..."
+              kubectl apply -n "${NAMESPACE}" -f - <<MANIFEST
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: federation-config
+                namespace: ${NAMESPACE}
+              data:
+                EP_NAME: "${EP_NAME}"
+                ORGANIZATION: "${ORGANIZATION}"
+                CKAN_SYSADMIN_NAME: "${CKAN_NAME}"
+                AUTH_API_URL: "${AUTH_API_URL}"
+                ENABLE_GROUP_BASED_ACCESS: "${ENABLE_GROUP_ACCESS}"
+                GROUP_NAMES: "${GROUP_NAMES}"
+                LOCAL_CATALOG_BACKEND: "ckan"
+                CKAN_LOCAL_ENABLED: "True"
+                CKAN_URL: "http://${CLUSTER_HOST}${CLUSTER_CKAN_PATH}"
+                CKAN_VERIFY_SSL: "False"
+                PRE_CKAN_ENABLED: "${PRE_CKAN_ENABLED}"
+                PRE_CKAN_URL: "${PRE_CKAN_URL}"
+                PRE_CKAN_API_KEY: "${PRE_CKAN_KEY}"
+                PRE_CKAN_VERIFY_SSL: "True"
+                KAFKA_CONNECTION: "${KAFKA_CONNECTION}"
+                KAFKA_HOST: "${CLUSTER_HOST}"
+                KAFKA_PORT: "${CLUSTER_KAFKA_PORT}"
+                METRICS_INTERVAL_SECONDS: "3300"
+                METRICS_ENDPOINT: "${FEDERATION_URL}/metrics"
+                USE_JUPYTERLAB: "${USE_JUPYTERLAB}"
+                JUPYTER_URL: "${JUPYTER_URL}"
+                MONGODB_CONNECTION_STRING: ""
+                MONGODB_DATABASE: ""
+                TEST_TOKEN: ""
+                S3_ENABLED: "False"
+                S3_ENDPOINT: ""
+                S3_ACCESS_KEY: ""
+                S3_SECRET_KEY: ""
+                S3_SECURE: "False"
+                S3_REGION: ""
+                PELICAN_ENABLED: "False"
+                PELICAN_FEDERATION_URL: ""
+                PELICAN_DIRECT_READS: "False"
+              MANIFEST
+
+              # ------------------------------------------------------------------
+              # 5. Write jupyterhub-secret (always — hub pod mounts this secret)
+              # ------------------------------------------------------------------
+              # Always write jupyterhub-secret so the JupyterHub hub pod can
+              # start (it mounts this secret via hub.existingSecret).
+              # When OAuth credentials are present the full config is written;
+              # when absent a minimal placeholder is written that prevents the
+              # pod from crashing — it can be fixed by patching the secret and
+              # restarting the hub after credentials are added to the federation doc.
+              echo "==> Writing jupyterhub-secret..."
+              JHUB_VALUES_FILE="$(mktemp)"
+
+              if [ -n "$CLIENT_ID" ] && [ -n "$CLIENT_SECRET" ]; then
+                {
+                  echo "hub:"
+                  echo "  config:"
+                  echo "    GenericOAuthenticator:"
+                  echo "      client_id: ${CLIENT_ID}"
+                  echo "      client_secret: ${CLIENT_SECRET}"
+                  echo "      oauth_callback_url: \"${JHUB_CALLBACK_URL}\""
+                  echo "      logout_redirect_url: \"${JHUB_LOGOUT_URL}\""
+                  if [ -n "$GROUP_NAME" ] && [ "$GROUP_NAME" != "null" ]; then
+                    CLEAN="${GROUP_NAME#/}"
+                    echo "      allow_all: False"
+                    echo "      allowed_groups:"
+                    echo "        - \"${CLEAN}\""
+                    echo "        - \"/${CLEAN}\""
+                  else
+                    echo "      allow_all: True"
+                  fi
+                  if [ -n "$POC" ] && [ "$POC" != "null" ]; then
+                    echo "      admin_users:"
+                    echo "        - \"${POC}\""
+                  fi
+                } > "$JHUB_VALUES_FILE"
+                echo "==> OAuth config ready: client_id=${CLIENT_ID} realm=${REALM_NAME}"
+              else
+                echo "WARNING: federation doc has no client_id/client_secret — writing placeholder jupyterhub-secret."
+                printf 'hub:\n  config:\n    GenericOAuthenticator:\n      client_id: ""\n      client_secret: ""\n' > "$JHUB_VALUES_FILE"
+              fi
+
+              kubectl create secret generic jupyterhub-secret \
+                -n "${NAMESPACE}" \
+                --from-file="values.yaml=${JHUB_VALUES_FILE}" \
+                --dry-run=client -o yaml | kubectl apply -f -
+
+              rm -f "$JHUB_VALUES_FILE"
+              echo "==> jupyterhub-secret written."
+
+              # ------------------------------------------------------------------
+              # 6. Patch ckancredentials with federation sysadmin name + password
+              # ------------------------------------------------------------------
+              echo "==> Patching ckancredentials with federation sysadmin credentials..."
+              kubectl patch secret ckancredentials \
+                -n "${NAMESPACE}" \
+                --type=merge \
+                -p "{\"stringData\":{\"sysadminName\":\"${CKAN_NAME}\",\"sysadminPassword\":\"${CKAN_PASSWORD}\"}}"
+              echo "==> ckancredentials patched."
+
+              echo "==> Federation config fetch complete."
+{{- end }}

@@ -44,7 +44,7 @@ spec:
           brokers:
             {{- range .Values.brokers.nodePorts }}
             - broker: {{ .broker }}
-              advertisedHost: {{ $.Values.brokers.advertisedHost | quote }}
+              advertisedHost: {{ $.Values.global.clusterHost | default $.Values.brokers.advertisedHost | quote }}
               nodePort: {{ .port }}
             {{- end }}
     config:
