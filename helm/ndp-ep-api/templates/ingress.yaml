@@ -19,13 +19,13 @@ spec:
     - host: {{ .Values.global.clusterHost | default .Values.ingress.host }}
       http:
         paths:
-          - path: {{ $apiPath }}
-            pathType: {{ .Values.ingress.pathType }}
-            backend:
-              service:
-                name: {{ $serviceName }}
-                port:
-                  number: {{ .Values.service.port }}
+          # - path: {{ $apiPath }}
+          #   pathType: {{ .Values.ingress.pathType }}
+          #   backend:
+          #     service:
+          #       name: {{ $serviceName }}
+          #       port:
+          #         number: {{ .Values.service.port }}
           # - path: {{ $uiPath }}
           #   pathType: {{ .Values.ingress.pathType }}
           #   backend:
@@ -33,6 +33,20 @@ spec:
           #       name: {{ $serviceName }}
           #       port:
           #         number: {{ .Values.service.port }}
+          # - path: /
+          #   pathType: Prefix
+          #   backend:
+          #     service:
+          #       name: {{ $serviceName }}
+          #       port:
+          #         number: {{ .Values.service.port }}
+          - path: /ep
+            pathType: {{ .Values.ingress.pathType }}
+            backend:
+              service:
+                name: {{ $serviceName }}
+                port:
+                  number: {{ .Values.service.port }}
   {{- with .Values.ingress.tls }}
   tls:
     {{- toYaml . | nindent 4 }}

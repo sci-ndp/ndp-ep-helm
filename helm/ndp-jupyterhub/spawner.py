@@ -64,6 +64,15 @@ os.environ['JUPYTERHUB_CRYPT_KEY'] = token_hex(32)
 
 original_profile_list = [
     {
+        'display_name': "NDP-EP/SciDx Remote Execution Environment",
+        'default': True,
+        'slug': "13",
+        'kubespawner_override': {
+            'image': 'yutianqin/scidx-rexec-quickstart:latest',
+            'image_pull_policy': 'Always',
+        }
+    },
+    {
         'display_name': "NDP Endpoint Data Streaming & Data Staging Examples",
         'default': False,
         'slug': "12",
@@ -73,7 +82,7 @@ original_profile_list = [
     },
     {
         'display_name': "Minimal NDP Starter Jupyter Lab",
-        'default': True,
+        'default': False,
         'slug': "1",
     },
     {
@@ -626,26 +635,6 @@ c.JupyterHub.template_paths = ['/etc/jupyterhub/custom']
 c.JupyterHub.spawner_class = MySpawner
 c.JupyterHub.allow_named_servers = False
 c.JupyterHub.authenticator_class = MyAuthenticator
-# c.JupyterHub.services = [
-# {
-#     "name": "service-prometheus",
-#     "api_token": os.environ["JUPYTERHUB_METRICS_API_KEY"]
-# },
-# ]
-
-# # Add a service role to scrape prometheus metrics
-# c.JupyterHub.load_roles = [
-# {
-#     "name": "service-metrics-role",
-#     "description": "access metrics",
-#     "scopes": [
-#         "read:metrics",
-#     ],
-#     "services": [
-#         "service-prometheus",
-#     ],
-# }
-# ]
 c.JupyterHub.services.append(
     {
         "name": "service-prometheus", 
