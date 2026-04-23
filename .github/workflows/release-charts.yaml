@@ -3,7 +3,7 @@ name: Release Helm Charts
 on:
   push:
     branches:
-      - release/0.0.5
+      - main
     paths:
       - 'helm/**'
   workflow_dispatch:
