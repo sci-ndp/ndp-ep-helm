@@ -23,8 +23,8 @@ metadata:
     {{- toYaml . | nindent 4 }}
   {{- end }}
 spec:
-  {{- if and .Values.ingress.className (semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion) }}
-  ingressClassName: {{ .Values.ingress.className }}
+  {{- if semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion }}
+  ingressClassName: {{ .Values.global.clusterIngressClass | default .Values.ingress.className | quote }}
   {{- end }}
   {{- if .Values.ingress.tls }}
   tls:
@@ -37,6 +37,26 @@ spec:
     {{- end }}
   {{- end }}
   rules:
+    {{- if .Values.global.clusterHost }}
+    {{- /* global.clusterHost is set — generate the rule from it, ignoring ingress.hosts defaults */}}
+    - host: {{ .Values.global.clusterHost | quote }}
+      http:
+        paths:
+          - path: {{ .Values.global.clusterCkanPath | default "/ckan" }}(/|$)(.*)
+            {{- if semverCompare ">=1.18-0" .Capabilities.KubeVersion.GitVersion }}
+            pathType: ImplementationSpecific
+            {{- end }}
+            backend:
+              {{- if semverCompare ">=1.19-0" .Capabilities.KubeVersion.GitVersion }}
+              service:
+                name: {{ $fullName }}
+                port:
+                  number: {{ $svcPort }}
+              {{- else }}
+              serviceName: {{ $fullName }}
+              servicePort: {{ $svcPort }}
+              {{- end }}
+    {{- else }}
     {{- range .Values.ingress.hosts }}
     - host: {{ .host | quote }}
       http:
@@ -57,5 +77,6 @@ spec:
               servicePort: {{ $svcPort }}
               {{- end }}
           {{- end }}
+    {{- end }}
     {{- end }}
 {{- end }}

@@ -1,0 +1,85 @@
+# Default values for the scidx-helm umbrella chart.
+# Sub-chart defaults are in their respective charts' values.yaml files.
+
+
+# ==============================================================================
+# Federation
+# ==============================================================================
+# Set federation.configId to enable fully automated deployment:
+#
+#   helm upgrade --install scidx scidx/scidx-helm \
+#     -n scidx --create-namespace \
+#     --set federation.configId=<id>
+#
+# When configId is set, a pre-install Job fetches the federation document and writes:
+#   - ConfigMap "federation-config"  → all EP API env vars (read by ndp-ep-api at startup)
+#   - Secret    "jupyterhub-secret"  → JupyterHub OAuth config (client_id, callback URLs, etc.)
+#   - Secret    "ckancredentials"     → CKAN sysadmin username and password (used by federation-fetch and ckansysadminapitoken)
+federation:
+  configId: ""
+  # Override to use a custom federation endpoint; leave empty to derive from global.env.
+  url: ""
+
+
+# ==============================================================================
+# Global cluster settings
+# ==============================================================================
+# Values in global.* are accessible to every sub-chart as .Values.global.*
+# Sub-chart templates fall back to these when their own local values are empty.
+global:
+  # NDP environment: "prod" (default) or "test"
+  # Drives federation.url, global.clusterIdpHost when those are left empty.
+  # Pass --set global.env=test to use the test environment.
+  env: "prod"
+  # External hostname or IP of the k8s node (drives Ingress, Kafka advertisedHost, CKAN siteUrl)
+  clusterHost: ""
+  # Kubernetes StorageClass name for all PVCs (CKAN, JupyterHub hub db, singleuser)
+  clusterStorageClass: ""
+  # Ingress controller class name
+  clusterIngressClass: ""
+  # Base NodePort for Kafka brokers (+0 broker0, +1 broker1, +2 broker2, +3 broker3)
+  clusterKafkaPort: 31090
+  # URL path prefixes served by the Ingress
+  clusterCkanPath: "/ckan"
+  clusterApiPath: "/api"
+  clusterJupyterPath: "/jupyter"
+  # IDP hostname — used to build AUTH_API_URL and JupyterHub OAuth URLs.
+  # Leave empty to derive from federation.env ("test" → idp-test.*, "prod" → idp.*).
+  clusterIdpHost: ""
+
+
+# ==============================================================================
+# CKAN API Token Bootstrap Job
+# ==============================================================================
+# Post-install/post-upgrade hook that:
+#   1. Waits for the CKAN pod to be Ready
+#   2. Generates a sysadmin API token inside the CKAN container
+#   3. Patches ndp-ep-env-secret (CKAN_API_KEY) and ckansysadminapitoken
+#   4. Rollout-restarts ndp-ep-api so it picks up the new token
+ckanBootstrap:
+  enabled: true
+  # Must match ndp-ep-api.envSecret.name
+  epApiSecretName: "ndp-ep-env-secret"
+  # Secret created by the ckan sub-chart holding the sysadmin API token
+  ckanTokenSecretName: "ckansysadminapitoken"
+  image:
+    repository: bitnami/kubectl
+    tag: latest
+    pullPolicy: IfNotPresent
+
+
+# ==============================================================================
+# Sub-chart enablement
+# ==============================================================================
+# Set to false to disable installing a sub-chart and all its dependencies.
+ckan:
+  enabled: true
+
+ndp-ep-api:
+  enabled: true
+
+ndp-jupyterhub:
+  enabled: false
+
+kafka-kraft:
+  enabled: false

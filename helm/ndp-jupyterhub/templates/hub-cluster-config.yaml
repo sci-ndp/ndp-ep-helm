@@ -1,0 +1,12 @@
+# ConfigMap providing cluster-specific values to the JupyterHub hub container.
+# hub.extraEnv entries that need .Release.Namespace or global.clusterStorageClass
+# reference this ConfigMap via valueFrom.configMapKeyRef.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: hub-cluster-config
+  namespace: {{ .Release.Namespace }}
+data:
+  namespace: {{ .Release.Namespace | quote }}
+  storageClass: {{ .Values.global.clusterStorageClass | default "" | quote }}
+  keycloakUrl: {{ printf "https://%s" ((.Values.global.clusterIdpHost | default "") | eq "" | ternary (eq (.Values.global.env | default "prod") "test" | ternary "idp-test.nationaldataplatform.org" "idp.nationaldataplatform.org") .Values.global.clusterIdpHost) | quote }}

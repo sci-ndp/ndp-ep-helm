@@ -127,11 +127,11 @@ ckan:
     masterDatabase: *MasterDBName
 
   # ckan.solr -- Location of SOLR collection used by the instance
-  solr: "http://solr-headless:8983/solr/ckancollection"
-  # solrUrl: "http://solr-headless:8983/solr/ckancollection"
+  # solr: "http://solr-headless:8983/solr/ckancollection"
+  solrUrl: "http://solr-headless:8983/solr/ckancollection"
   # ckan.redis -- Location of the Redis service to be used by the CKAN instance
-  redis: "redis://redis-headless:6379/0"
-  # redisUrl: "redis://redis-headless:6379/0"
+  # redis: "redis://redis-headless:6379/0"
+  redisUrl: "redis://redis-headless:6379/0"
   # ckan.spatialBackend -- Spatial backend to be used by the instance
   spatialBackend: "solr"
 

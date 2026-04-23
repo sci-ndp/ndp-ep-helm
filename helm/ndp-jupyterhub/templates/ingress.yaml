@@ -1,0 +1,23 @@
+{{- if .Values.global.clusterHost }}
+# Custom JupyterHub Ingress that uses global.clusterHost.
+# Created instead of the upstream JupyterHub ingress so that path and hostname
+# can be derived from the cluster-wide global values set at deploy time.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jupyterhub-ingress
+  namespace: {{ .Release.Namespace }}
+spec:
+  ingressClassName: {{ .Values.global.clusterIngressClass | default "public" | quote }}
+  rules:
+    - host: {{ .Values.global.clusterHost | quote }}
+      http:
+        paths:
+          - path: {{ .Values.global.clusterJupyterPath | default "/jupyter" }}
+            pathType: Prefix
+            backend:
+              service:
+                name: proxy-public
+                port:
+                  name: http
+{{- end }}

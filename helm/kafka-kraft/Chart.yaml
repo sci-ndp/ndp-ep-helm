@@ -2,7 +2,7 @@ apiVersion: v2
 name: kafka-kraft
 description: Strimzi-based Kafka cluster in KRaft mode (requires Strimzi operator installed)
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "4.0.0"
 dependencies:
   - name: strimzi-kafka-operator

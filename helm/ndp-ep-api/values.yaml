@@ -2,7 +2,7 @@ replicaCount: 1
 
 image:
   repository: rbardaji/ndp-ep-api
-  tag: latest
+  tag: 0.9.0
   pullPolicy: Always
 
 imagePullSecrets: []
@@ -10,12 +10,14 @@ nameOverride: ""
 fullnameOverride: ""
 
 containerPort: 8000
+# containerPort: 80
 
 service:
   name: ndp-ep-api-service
   type: ClusterIP
   port: 8003
   targetPort: 8000
+  # targetPort: 80
 
 ingress:
   enabled: true

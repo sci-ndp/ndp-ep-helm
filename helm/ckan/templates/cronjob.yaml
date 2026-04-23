@@ -60,9 +60,11 @@ spec:
                   name: ckancredentials
                   key: ckanDatastoreReadUrl
             - name: CKAN_SOLR_URL
-              value: {{ .Values.ckan.solr }}
+              # value: {{ .Values.ckan.solr }}
+              value: {{ .Values.ckan.solrUrl }}
             - name: CKAN__REDIS__URL
-              value: {{ .Values.ckan.redis }}
+              # value: {{ .Values.ckan.redis }}
+              value: {{ .Values.ckan.redisUrl }}
             - name: CKAN__DATAPUSHER__URL
               value: {{ .Values.ckan.datapusherUrl }}
             - name: CKAN___SMTP__SERVER

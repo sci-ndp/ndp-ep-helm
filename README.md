@@ -1,26 +1,11 @@
 
-## install:
+Add NDP-EP helm chart:
 ```
-helm repo add scidx https://sci-ndp.github.io/scidx-helm
+helm repo add ndp-ep https://sci-ndp.github.io/ndp-ep-helm
 helm repo update
-helm upgrade --install scidx scidx/scidx-helm \
-  -f my-values.yaml \
-  --namespace scidx \
-  --create-namespace
 ```
 
-
-## local dev:
-### install
+Install:
 ```
-helm dep update ./kafka-kraft
-helm dep update ./jupyterhub-helm
-helm dep update ./ckan-helm
-helm template scidx . -f values.yaml -n scidx > ../ckan-debug
-helm dep update
-helm upgrade --install scidx . -f values.yaml --namespace scidx --create-namespace
-```
-## uninstall
-```
-helm uninstall scidx -n scidx
+bash <(curl -sL https://github.com/sci-ndp/NDP-EP/releases/latest/download/helm.sh) --config_id <xxxxxx> --host <your-host> --storage-class <your-storage-class> --ingress-class <your-ingress-class>
 ```
