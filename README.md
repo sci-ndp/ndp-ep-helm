@@ -13,3 +13,10 @@ bash <(curl -sL https://github.com/sci-ndp/NDP-EP/releases/latest/download/helm.
     --storage-class <your-storage-class> \
     --ingress-class <your-ingress-class>
 ```
+
+Access:
+- **NDP EP UI:** `https://<ingress-host>/ep/ui`
+- **NDP EP API Docs:** `https://<ingress-host>/ep/api/docs`
+- **CKAN:** `https://<ingress-host>/ckan`
+- **NDP JHub:** `https://<ingress-host>/jupyter` if it's enabled
+- **Kafka:** `kcat -L -b <ingress-host>:31090` if it's enabled
