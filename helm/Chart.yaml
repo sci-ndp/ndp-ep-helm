@@ -2,7 +2,7 @@ apiVersion: v2
 name: ndp-ep-helm
 description: Helm chart for NDP-Endpoint (CKAN, JupyterHub, NDP Endpoint API, Kafka).
 type: application
-version: 0.0.6
+version: 0.0.7
 appVersion: "0.1.0"
 dependencies:
   # NDP Endpoint API

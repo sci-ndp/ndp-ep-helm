@@ -115,8 +115,9 @@ spec:
 
               KC_BASE="https://${CLUSTER_IDP_HOST}/realms/${REALM_NAME}/protocol/openid-connect"
               AUTH_API_URL="https://${CLUSTER_IDP_HOST}/temp/information"
-              JHUB_CALLBACK_URL="https://${CLUSTER_HOST}${CLUSTER_JUPYTER_PATH}/hub/oauth_callback"
-              JHUB_LOGOUT_URL="${KC_BASE}/logout?post_logout_redirect_uri=https://${CLUSTER_HOST}${CLUSTER_JUPYTER_PATH}&client_id=${CLIENT_ID}"
+              JUPYTER_URL="${JUPYTER_URL%/}"
+              JHUB_CALLBACK_URL="${JUPYTER_URL}/hub/oauth_callback"
+              JHUB_LOGOUT_URL="${KC_BASE}/logout?post_logout_redirect_uri=${JUPYTER_URL}&client_id=${CLIENT_ID}"
 
               echo "==> Parsed: EP_NAME=${EP_NAME} ORGANIZATION=${ORGANIZATION} KAFKA_CONNECTION=${KAFKA_CONNECTION} USE_JUPYTERLAB=${USE_JUPYTERLAB}"
 
