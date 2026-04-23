@@ -1,9 +1,9 @@
 
-
+Test:<br>
+config from `federation.ndp.utah.edu/test`<br>
+authenticate through `idp-test.nationaldataservice.org/temp`
 ```
-helm repo add ndp-ep https://sci-ndp.github.io/ndp-ep-helm
-helm repo update
-./helm.local.sh \
+./helm.sh \
     --config_id <xxxxxxxxxxxxxx> \
     --host <your-host> \
     --storage-class <your-storage-class> \
@@ -11,11 +11,14 @@ helm repo update
     --env test
 ```
 
-Prod: One line install command
+Prod:<br>
+config from `federation.ndp.utah.edu/prod`<br>
+authenticate through `idp.nationaldataservice.org/temp`
 ```
-bash <(curl -sL https://github.com/sci-ndp/NDP-EP/releases/latest/download/helm.sh) \
+./helm.sh \
     --config_id <xxxxxxxxxxxxxx> \
     --host <your-host> \
     --storage-class <your-storage-class> \
     --ingress-class <your-ingress-class>
+    --env test
 ```
