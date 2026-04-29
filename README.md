@@ -8,7 +8,7 @@ Or https://federation.ndp.utah.edu/docs, query `/ep/simple` to directly register
 One-liner install:
 ```
 bash <(curl -sL https://raw.githubusercontent.com/sci-ndp/ndp-ep-helm/main/helm.sh) \
-    --config_id <xxxxxxxxxxxxxx> \
+    --config-id <xxxxxxxxxxxxxx> \
     --host <your-host> \
     --storage-class <your-storage-class> \
     --ingress-class <your-ingress-class>
