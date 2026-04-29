@@ -2,5 +2,5 @@ apiVersion: v2
 name: ndp-ep-api
 description: Helm chart for the NDP Endpoint API
 type: application
-version: 0.12.0
+version: 0.13.0
 appVersion: "latest"
