@@ -5,7 +5,7 @@ Otherwise derive from global.env:
   "test" → https://federation.ndp.utah.edu/test
   "prod" (default) → https://federation.ndp.utah.edu
 */}}
-{{- define "scidx.federationUrl" -}}
+{{- define "ndp-ep.federationUrl" -}}
 {{- if .Values.federation.url -}}
 {{- .Values.federation.url -}}
 {{- else if eq (.Values.global.env | default "prod") "test" -}}
@@ -22,7 +22,7 @@ Otherwise derive from global.env:
   "test" → idp-test.nationaldataplatform.org
   "prod" (default) → idp.nationaldataplatform.org
 */}}
-{{- define "scidx.clusterIdpHost" -}}
+{{- define "ndp-ep.clusterIdpHost" -}}
 {{- if .Values.global.clusterIdpHost -}}
 {{- .Values.global.clusterIdpHost -}}
 {{- else if eq (.Values.global.env | default "prod") "test" -}}

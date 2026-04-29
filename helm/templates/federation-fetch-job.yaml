@@ -1,15 +1,18 @@
 {{- if .Values.federation.configId }}
+
 # Pre-install/pre-upgrade Job.
+# --------------------------------------------------------------------
 # Fetches the NDP Endpoint configuration from the Federation API and writes:
 #   - ConfigMap "federation-config"  → all EP API env vars (read by ndp-ep-api at startup)
 #   - Secret  "jupyterhub-secret"    → full JupyterHub OAuth config (read via existingSecret)
 #
-# Because this is a pre-install hook it runs BEFORE any Deployment is created, so
-# JupyterHub and the EP API both start with the correct configuration on the first try.
+# This is a pre-install hook it runs BEFORE any Deployment is created, 
+# So JupyterHub and the EP API both start with the configuration registered on the Federation.
 #
 # On upgrade the Job re-fetches federation config. If the federation doc has changed
 # (e.g. new OAuth client_id), the ConfigMap and Secret are patched and affected pods
 # should be restarted manually (or via a separate post-upgrade hook).
+
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -31,7 +34,7 @@ spec:
           imagePullPolicy: {{ .Values.ckanBootstrap.image.pullPolicy }}
           env:
             - name: FEDERATION_URL
-              value: {{ include "scidx.federationUrl" . | quote }}
+              value: {{ include "ndp-ep.federationUrl" . | quote }}
             - name: CONFIG_ID
               value: {{ .Values.federation.configId | quote }}
             - name: NAMESPACE
@@ -45,7 +48,7 @@ spec:
             - name: CLUSTER_JUPYTER_PATH
               value: {{ .Values.global.clusterJupyterPath | default "/jupyter" | quote }}
             - name: CLUSTER_IDP_HOST
-              value: {{ include "scidx.clusterIdpHost" . | quote }}
+              value: {{ include "ndp-ep.clusterIdpHost" . | quote }}
             - name: RELEASE_NAMESPACE
               value: {{ .Release.Namespace | quote }}
           command:
@@ -98,10 +101,10 @@ spec:
                 PRE_CKAN_ENABLED="True"
               fi
 
-              ENABLE_GROUP_ACCESS="true"
-              if [ "$PUBLIC" = "true" ] || [ "$PUBLIC" = "True" ]; then
-                ENABLE_GROUP_ACCESS="false"
-              fi
+              ENABLE_GROUP_ACCESS="True"
+              # if [ "$PUBLIC" = "true" ] || [ "$PUBLIC" = "True" ]; then
+              #   ENABLE_GROUP_ACCESS="false"
+              # fi
 
               GROUP_NAMES=""
               if [ -n "$GROUP_NAME" ] && [ "$GROUP_NAME" != "null" ]; then
@@ -155,7 +158,6 @@ spec:
                 JUPYTER_URL: "${JUPYTER_URL}"
                 MONGODB_CONNECTION_STRING: ""
                 MONGODB_DATABASE: ""
-                TEST_TOKEN: "sci@utah"
                 S3_ENABLED: "False"
                 S3_ENDPOINT: ""
                 S3_ACCESS_KEY: ""

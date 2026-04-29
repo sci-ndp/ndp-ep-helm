@@ -3,7 +3,7 @@ jupyterhub:
   hub:
     image:
       name: yutianqin/ndp-k8s-hub
-      tag: "v1"
+      tag: "latest"
     extraEnv:
       JUPYTERHUB_METRICS_API_KEY: a81e4f556c8f414df20e6294543451fc
       NDP_JUPYTERHUB_NAMESPACE:
@@ -22,6 +22,11 @@ jupyterhub:
           configMapKeyRef:
             name: hub-cluster-config
             key: storageClass
+      NDP_WORKSPACES_HOST:
+        valueFrom:
+          configMapKeyRef:
+            name: hub-cluster-config
+            key: workspacesHost
     existingSecret: jupyterhub-secret # Passing keycloak client_id and client_secret into hub server
     config:
       GenericOAuthenticator:

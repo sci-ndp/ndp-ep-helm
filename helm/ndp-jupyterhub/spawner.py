@@ -34,7 +34,7 @@ def use_k8s_secret(namespace, secret_name):
 
     return client_id_splitted, client_secret_splitted
 
-NAMESPACE = os.environ.get('NDP_JUPYTERHUB_NAMESPACE', 'scidx')
+NAMESPACE = os.environ.get('NDP_JUPYTERHUB_NAMESPACE', 'ndp-ep')
 
 CLIENT_ID, CLIENT_SECRET = use_k8s_secret(namespace=NAMESPACE, secret_name='jupyterhub-secret')
 KEYCLOAK_URL = os.environ.get('NDP_KEYCLOAK_URL', 'https://idp.nationaldataplatform.org').rstrip('/')
@@ -46,26 +46,32 @@ NDP_EXT_VERSION = '0.0.22+aa2458c'
 USER_PERSISTENT_STORAGE_FOLDER = "_User-Persistent-Storage"
 STORAGE_CLASS = os.environ.get('PVC_STORAGE_CLASS', 'microk8s-hostpath')
 
-aws_access_key_id = 'admin'
-aws_secret_access_key = 'sample_key'
-mlflow_s3_endpoint_url = 'http://minio:9000'
-mlflow_tracking_uri = 'https://nationaldataplatform.org/mlflow'
-# mlflow_admin_username = 'admin'
-# mlflow_admin_password = 'password'
-mlflow_default_user_password = 'password'
-aws_bucket_name = 'mlflow'
 CKAN_API_URL = "https://nationaldataplatform.org/catalog/api/3/action/"
 PREKAN_API_URL = "https://nationaldataplatform.org/catalog2/ndp/"
-# WORKSPACE_API_URL = "https://nationaldataplatform.org/workspaces-api"
-WORKSPACE_API_URL = "https://ndp-test.sdsc.edu/workspaces-api"
+NDP_WORKSPACES_HOST = os.environ.get('NDP_WORKSPACES_HOST', 'nationaldataplatform.org')
+WORKSPACE_API_URL = f"https://{NDP_WORKSPACES_HOST}/workspaces-api"
 REFRESH_EVERY_SECONDS = 1200
 
 os.environ['JUPYTERHUB_CRYPT_KEY'] = token_hex(32)
 
 original_profile_list = [
     {
-        'display_name': "NDP-EP/SciDx Remote Execution Environment",
+        'display_name': "Minimal NDP Starter Jupyter Lab",
         'default': True,
+        'slug': "1",
+    },
+    {
+        'display_name': "NDP-EP/SciDx Air Quality Streaming",
+        'default': False,
+        'slug': "14",
+        'kubespawner_override': {
+            'image': 'yutianqin/scidx-airqualityendpoint:latest',
+            'image_pull_policy': 'Always',
+        }
+    },
+    {
+        'display_name': "NDP-EP/SciDx Remote Execution Environment",
+        'default': False,
         'slug': "13",
         'kubespawner_override': {
             'image': 'yutianqin/scidx-rexec-quickstart:latest',
@@ -78,100 +84,6 @@ original_profile_list = [
         'slug': "12",
         'kubespawner_override': {
             'image': 'yutianqin/rai-utah-hackathon:latest',
-        }
-    },
-    {
-        'display_name': "Minimal NDP Starter Jupyter Lab",
-        'default': False,
-        'slug': "1",
-    },
-    {
-        'display_name': "Minimal NDP Starter Jupyter Lab + RStudio",
-        'slug': "11",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:rstudio_v0.0.1',
-            'default_url': '/lab'
-        }
-    },
-    {
-        'display_name': "NDP Catalog Search",
-        'default': False,
-        'slug': "10",
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:catalog_search_v0.9',
-        }
-    },
-    {
-        'display_name': "Physics Guided Machine Learning Starter Code ",
-        'slug': "2",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:pgml_v0.1.7.3',
-        }
-    },
-    {
-        'display_name': "SAGE Pilot Streaming Data Starter Code",
-        'slug': "3",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:sage_v0.2.1.6',
-        }
-    },
-    {
-        'display_name': "EarthScope Consortium Streaming Data Starter Code",
-        'slug': "4",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:earthscope_v0.2.4.3',
-        }
-    },
-    {
-        'display_name': "NAIRR Pilot - NASA Harmonized Landsat Sentinel-2 (HLS) Starter Code",
-        'slug': "5",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:nair_v0.0.0.17',
-        }
-    },
-    {
-        'display_name': "LLM Training (CUDA 12.3, tested with 1 GPU, 12 cores, 64GB RAM, NVIDIA A100-80GB)",
-        'slug': "6",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:llm_v0.0.0.16_big',
-        }
-    },
-    {
-        'display_name': "LLM Service Client (Minimal, No CUDA)",
-        'slug': "7",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:llm_v0.0.0.14_small',
-        }
-    },
-    {
-        'display_name': "TLS Fuel-Size Segmentation 2023",
-        'slug': "8",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:tls_class_0.0.0.5',
-        }
-    },
-    {
-        'display_name': "NOAA-GOES Analysis",
-        'slug': "9",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:noaa_goes_v0.0.0.3',
-        }
-    },
-    {
-        'display_name': "NOAA-SAGE-EARTHSCOPE Starter Codes",
-        'slug': "10",
-        'default': False,
-        'kubespawner_override': {
-            'image': 'gitlab-registry.nrp-nautilus.io/ndp/ndp-docker-images/jhub-spawn:utah_demos_0.0.0.1',
         }
     },
 ]
@@ -189,6 +101,9 @@ class MySpawner(KubeSpawner):
 
                     <label for="entity-select">What do you want to work on?</label>
                     <select class="form-control input" name="entity" required>
+                    {% if entity_list and entity_list[0].entity_id == "expired" %}
+                    <option value="" disabled selected>{{ entity_list[0].name }}</option>
+                    {% else %}
                     <option value="" disabled {% if not preselected_entity %}selected{% endif %}>Select</option>
                     {% for entity in entity_list %}
                     {% set value = entity.workspace_id or entity.entity_id %}
@@ -199,6 +114,7 @@ class MySpawner(KubeSpawner):
                     </option>
                     {% endif %}
                     {% endfor %}
+                    {% endif %}
                     </select>
 
                     <!-- Profile selection -->
@@ -280,8 +196,6 @@ class MySpawner(KubeSpawner):
                     # image += ":" + formdata.get('tag', [0])[0]
 
                 setattr(self, k, image)
-
-                selected_id = formdata.get('entity', [''])[0]
         
         selected_id = formdata.get('entity', [''])[0]
         entity_name = ''
@@ -336,20 +250,36 @@ class MySpawner(KubeSpawner):
         self.extra_volumes = self.volumes
         self.extra_volume_mounts = self.volume_mounts
 
-        if formdata.get('timeout', [0])[0]:
-            self.http_timeout=int(formdata.get('timeout', [0])[0])
-        else:
-            self.http_timeout = 1200
-
+        # if formdata.get('timeout', [0])[0]:
+        #     self.http_timeout=int(formdata.get('timeout', [0])[0])
+        # else:
+        #     self.http_timeout = 1200
+        
+        # silent failure: 
+        # to prevent automatically start spawning server when workspace-id is present in url
+        try:
+            timeout_val = formdata.get('timeout', [0])[0]
+            _ = timeout_val + ""  # TypeError if int (user_options replay) vs string (form submission)
+            if timeout_val:
+                self.http_timeout = int(timeout_val)
+            else:
+                self.http_timeout = 1200
+        except TypeError as e:
+            print(e)
+            if "unsupported operand" in str(e):
+                raise Exception()
+            
         return options
 
     async def options_form(self, spawner):
         try:
             entities = await get_user_entities(spawner.access_token)
         except Exception as e:
-            self.log.error(f"Error fetching entities: {e}")
-            entities = []
-
+            print(f"Error fetching entities: {e}")
+            entities = [{
+                "entity_id": "expired",
+                "name": "Session expired. Please log out and log in again."
+                }]
         # Grab ?source=... from request (if present)
         source = None
         if spawner.handler and "source" in spawner.handler.request.arguments:
@@ -463,8 +393,7 @@ def auth_state_hook(spawner, auth_state):
 ## Functions to retrieve user PVCs
 async def get_user_pvcs(token):
     try:
-        # conn = http.client.HTTPSConnection("nationaldataplatform.org")
-        conn = http.client.HTTPSConnection("ndp-test.sdsc.edu")
+        conn = http.client.HTTPSConnection(NDP_WORKSPACES_HOST)
         headers = {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'}
@@ -480,8 +409,7 @@ async def get_user_pvcs(token):
 ## Function to retrieve user entities
 async def get_user_entities(token):
     try:
-        # conn = http.client.HTTPSConnection("nationaldataplatform.org")
-        conn = http.client.HTTPSConnection("ndp-test.sdsc.edu")
+        conn = http.client.HTTPSConnection(NDP_WORKSPACES_HOST)
         headers = {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'}
@@ -498,8 +426,7 @@ async def get_user_entities(token):
 
 async def update_pvc(token, pvc_id):
     try:
-        # conn = http.client.HTTPSConnection("nationaldataplatform.org")
-        conn = http.client.HTTPSConnection("ndp-test.sdsc.edu")
+        conn = http.client.HTTPSConnection(NDP_WORKSPACES_HOST)
         headers = {
             'Authorization': f'Bearer {token}',
             'Content-Type': 'application/json'
@@ -536,6 +463,7 @@ async def pre_spawn_hook(spawner):
     pip_install_command1 = ("pip install --upgrade jupyterlab==4.2.4 jupyter-archive==3.4.0 jupyterlab-launchpad==1.0.1")
     pip_install_command2 = ("pip install jupyterlab-git==0.50.1 --index-url https://gitlab.nrp-nautilus.io/api/v4/projects/3930/packages/pypi/simple --user")
     pip_install_command3 = (f"pip install ndp-jupyterlab-extension=={NDP_EXT_VERSION} --index-url https://gitlab.nrp-nautilus.io/api/v4/projects/3930/packages/pypi/simple --user")
+    pip_install_command4 = ("pip install 'pexpect>=4.9' --user")  # fix for git clone issue
 
     # Modify the spawner's start command to include the pip install
     original_cmd = spawner.cmd or ["jupyterhub-singleuser"]
@@ -548,13 +476,12 @@ async def pre_spawn_hook(spawner):
         f"&& {pip_install_command1} || true "
         f"&& {pip_install_command2} || true "
         f"&& {pip_install_command3} || true "
+        f"&& {pip_install_command4} || true "
         f"&& cd /home/jovyan/work || true "
-        f"&& exec {' '.join(original_cmd)}"
+        f"&& exec {' '.join(original_cmd)} '--ServerApp.allow_origin=*'"
     ]
 
-    # make username available for MLflow library
     username = spawner.user.name
-    spawner.environment.update({'MLFLOW_TRACKING_USERNAME': username})
     spawner.environment.update({"CKAN_API_URL": CKAN_API_URL})
     spawner.environment.update({"PREKAN_API_URL": PREKAN_API_URL})
     spawner.environment.update({"WORKSPACE_API_URL": WORKSPACE_API_URL})
@@ -659,12 +586,6 @@ c.MyAuthenticator.auth_refresh_age = 86300
 c.MyAuthenticator.refresh_pre_spawn = True
 
 c.MySpawner.environment = {
-    'AWS_ACCESS_KEY_ID': aws_access_key_id,
-    'AWS_SECRET_ACCESS_KEY': aws_secret_access_key,
-    'MLFLOW_TRACKING_URI': mlflow_tracking_uri,
-    'MLFLOW_S3_ENDPOINT_URL': mlflow_s3_endpoint_url,
-    'MLFLOW_TRACKING_PASSWORD': mlflow_default_user_password,
-    'AWS_BUCKET_NAME': aws_bucket_name,
     'GIT_PYTHON_REFRESH': 'quiet',
 }
 c.MySpawner.pre_spawn_hook = pre_spawn_hook

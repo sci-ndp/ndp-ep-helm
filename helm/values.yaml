@@ -1,16 +1,10 @@
-# Default values for the scidx-helm umbrella chart.
+# Default values for the ndp-ep-helm umbrella chart.
 # Sub-chart defaults are in their respective charts' values.yaml files.
 
 
 # ==============================================================================
 # Federation
 # ==============================================================================
-# Set federation.configId to enable fully automated deployment:
-#
-#   helm upgrade --install scidx scidx/scidx-helm \
-#     -n scidx --create-namespace \
-#     --set federation.configId=<id>
-#
 # When configId is set, a pre-install Job fetches the federation document and writes:
 #   - ConfigMap "federation-config"  → all EP API env vars (read by ndp-ep-api at startup)
 #   - Secret    "jupyterhub-secret"  → JupyterHub OAuth config (client_id, callback URLs, etc.)

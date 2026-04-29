@@ -10,3 +10,4 @@ data:
   namespace: {{ .Release.Namespace | quote }}
   storageClass: {{ .Values.global.clusterStorageClass | default "" | quote }}
   keycloakUrl: {{ printf "https://%s" ((.Values.global.clusterIdpHost | default "") | eq "" | ternary (eq (.Values.global.env | default "prod") "test" | ternary "idp-test.nationaldataplatform.org" "idp.nationaldataplatform.org") .Values.global.clusterIdpHost) | quote }}
+  workspacesHost: {{ eq (.Values.global.env | default "prod") "test" | ternary "ndp-test.sdsc.edu" "nationaldataplatform.org" | quote }}
