@@ -20,7 +20,7 @@ dependencies:
   
   # NDP Generic JupyterHub
   - name: ndp-jupyterhub
-    version: "0.1.2"
+    version: "0.1.1"
     repository: "file://./ndp-jupyterhub"
     condition: ndp-jupyterhub.enabled
 
