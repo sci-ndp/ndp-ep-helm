@@ -3,6 +3,42 @@ entries:
   ndp-ep-helm:
   - apiVersion: v2
     appVersion: 0.1.0
+    created: "2026-05-28T18:45:38.799821583Z"
+    dependencies:
+    - alias: ndp-ep-api
+      condition: ndp-ep-api.enabled
+      name: ndp-ep-api
+      repository: file://./ndp-ep-api
+      version: 0.13.0
+    - condition: ckan.enabled
+      name: ckan
+      repository: file://./ckan
+      version: v4.0.2
+    - condition: ndp-jupyterhub.enabled
+      name: ndp-jupyterhub
+      repository: file://./ndp-jupyterhub
+      version: 0.1.1
+    - condition: kafka-kraft.enabled
+      name: kafka-kraft
+      repository: file://./kafka-kraft
+      version: 0.1.1
+    - condition: rexec-broker.enabled
+      name: rexec-broker
+      repository: file://./rexec-broker
+      version: 0.1.0
+    - condition: rexec-server-deployment-api.enabled
+      name: rexec-server-deployment-api
+      repository: file://./rexec-server-deployment-api
+      version: 0.1.0
+    description: Helm chart for NDP-Endpoint
+    digest: aec0394f0006e6046bbbe34bf3ad4db45bdd744d2bf6569b2f11d335474cf4cc
+    name: ndp-ep-helm
+    type: application
+    urls:
+    - https://github.com/sci-ndp/ndp-ep-helm/releases/download/ndp-ep-helm-0.0.9/ndp-ep-helm-0.0.9.tgz
+    version: 0.0.9
+  - apiVersion: v2
+    appVersion: 0.1.0
     created: "2026-04-29T20:37:33.55864302Z"
     dependencies:
     - alias: ndp-ep-api
@@ -229,4 +265,4 @@ entries:
     urls:
     - https://github.com/sci-ndp/scidx-helm/releases/download/scidx-helm-0.0.1/scidx-helm-0.0.1.tgz
     version: 0.0.1
-generated: "2026-04-29T20:37:33.558665892Z"
+generated: "2026-05-28T18:45:38.799847561Z"
