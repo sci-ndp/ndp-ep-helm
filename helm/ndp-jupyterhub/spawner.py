@@ -61,15 +61,6 @@ original_profile_list = [
         'slug': "1",
     },
     {
-        'display_name': "NDP-EP/SciDx Air Quality Streaming",
-        'default': False,
-        'slug': "14",
-        'kubespawner_override': {
-            'image': 'yutianqin/scidx-airqualityendpoint:latest',
-            'image_pull_policy': 'Always',
-        }
-    },
-    {
         'display_name': "NDP-EP/SciDx Remote Execution Environment",
         'default': False,
         'slug': "13",
@@ -79,11 +70,39 @@ original_profile_list = [
         }
     },
     {
-        'display_name': "NDP Endpoint Data Streaming & Data Staging Examples",
+        'display_name': "NDP-EP/SciDx Disaster Alert Streaming",
         'default': False,
-        'slug': "12",
+        'slug': "15",
         'kubespawner_override': {
-            'image': 'yutianqin/rai-utah-hackathon:latest',
+            'image': 'yutianqin/scidx-disasteralertendpoint:latest',
+            'image_pull_policy': 'Always',
+        }
+    },
+    {
+        'display_name': "NDP-EP/SciDx Air Quality Streaming",
+        'default': False,
+        'slug': "14",
+        'kubespawner_override': {
+            'image': 'yutianqin/scidx-airqualityendpoint:latest',
+            'image_pull_policy': 'Always',
+        }
+    },
+    {
+        'display_name': "NDP-EP/SciDx ALL-IN-ONE Demo | sci-ndp github registry",
+        'default': False,
+        'slug': "18",
+        'kubespawner_override': {
+            'image': "ghcr.io/sci-ndp/ndp-ep-demo-allinone:latest",
+            'image_pull_policy': 'Always',
+        }
+    },
+    {
+        'display_name': "NDP-EP/SciDx All-in-One Demo | yutianqin's DockerHub",
+        'default': False,
+        'slug': "16",
+        'kubespawner_override': {
+            'image': 'yutianqin/ndp-ep-demo-allinone:latest',
+            'image_pull_policy': 'Always',
         }
     },
 ]

@@ -1,0 +1,60 @@
+enabled: true
+nameOverride: ""
+fullnameOverride: ""
+
+authApiUrl: ""
+
+image:
+  repository: "yutianqin/rexec-server-k8s-deployment-api"
+  tag: "latest"
+  pullPolicy: Always
+
+replicaCount: 1
+
+service:
+  type: ClusterIP
+  port: 8000
+
+ingress:
+  enabled: true
+  className: ""
+  annotations: {}
+  hosts:
+    - host: ""
+      paths:
+        - path: /rexec
+          pathType: Prefix
+  tls: []
+
+env:
+  rexecServerNamespacePrefix: "rexec-server-"
+  brokerServiceName: "rexec-broker-internal-ip"
+  brokerNamespace: ""
+  brokerPort: 5560
+  brokerExternalPort: 30001
+  rootPath: "/rexec"
+
+kubeconfig:
+  existingSecret: ""
+  secretKey: "config"
+  mountPath: "/home/appuser/.kube/config"
+  createSecret: false
+  content: ""
+
+# enable in-cluster kubeconfig 
+inClusterConfig:
+  enabled: true
+
+serviceAccount:
+  create: true
+  name: ""
+
+rbac:
+  create: true
+
+extraEnv: []
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

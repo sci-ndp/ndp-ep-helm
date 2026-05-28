@@ -1,0 +1,5 @@
+apiVersion: v2
+name: rexec-server-deployment-api
+description: Rexec Server Deployment API
+version: 0.1.0
+appVersion: "0.1.0"

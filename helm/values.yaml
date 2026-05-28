@@ -1,7 +1,6 @@
 # Default values for the ndp-ep-helm umbrella chart.
 # Sub-chart defaults are in their respective charts' values.yaml files.
 
-
 # ==============================================================================
 # Federation
 # ==============================================================================
@@ -27,6 +26,9 @@ global:
   env: "prod"
   # External hostname or IP of the k8s node (drives Ingress, Kafka advertisedHost, CKAN siteUrl)
   clusterHost: ""
+  # Optional: publicly reachable domain when the cluster sits behind a reverse proxy.
+  # Used for REXEC_DEPLOYMENT_API_URL. Defaults to clusterHost when not set.
+  clusterPublicHost: ""
   # Kubernetes StorageClass name for all PVCs (CKAN, JupyterHub hub db, singleuser)
   clusterStorageClass: ""
   # Ingress controller class name
@@ -76,4 +78,12 @@ ndp-jupyterhub:
   enabled: false
 
 kafka-kraft:
+  enabled: false
+
+# Remote Execution broker — exposes ZMQ client/control ports via NodePort
+rexec-broker:
+  enabled: false
+
+# Remote Execution Server Deployment API — ingress adopts global.clusterHost / clusterIngressClass
+rexec-server-deployment-api:
   enabled: false

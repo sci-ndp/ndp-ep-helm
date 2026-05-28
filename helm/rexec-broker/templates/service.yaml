@@ -1,0 +1,45 @@
+{{- if .Values.service.external.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: rexec-broker-external-ip
+  labels:
+    {{- include "broker.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.external.type }}
+  selector:
+    {{- include "broker.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: client-port
+      protocol: TCP
+      port: {{ .Values.ports.client }}
+      targetPort: {{ .Values.ports.client }}
+      {{- if eq .Values.service.external.type "NodePort" }}
+      nodePort: {{ .Values.service.external.clientNodePort }}
+      {{- end }}
+    - name: control-port
+      protocol: TCP
+      port: {{ .Values.ports.control }}
+      targetPort: {{ .Values.ports.control }}
+      {{- if eq .Values.service.external.type "NodePort" }}
+      nodePort: {{ .Values.service.external.controlNodePort }}
+      {{- end }}
+---
+{{- end }}
+{{- if .Values.service.internal.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: rexec-broker-internal-ip
+  labels:
+    {{- include "broker.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.service.internal.type }}
+  selector:
+    {{- include "broker.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: server-port
+      protocol: TCP
+      port: {{ .Values.ports.server }}
+      targetPort: {{ .Values.ports.server }}
+{{- end }}

@@ -9,7 +9,7 @@ Otherwise derive from global.env:
 {{- if .Values.federation.url -}}
 {{- .Values.federation.url -}}
 {{- else if eq (.Values.global.env | default "prod") "test" -}}
-https://federation.ndp.utah.edu/test
+https://test.federation.ndp.utah.edu
 {{- else -}}
 https://federation.ndp.utah.edu
 {{- end -}}

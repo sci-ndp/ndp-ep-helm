@@ -1,0 +1,30 @@
+{{- if .Values.ingress.enabled }}
+{{- $rexecPath := .Values.env.rootPath | default "/rexec" }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "deployment-api.fullname" . }}
+  labels:
+    {{- include "deployment-api.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ coalesce .Values.global.clusterIngressClass .Values.ingress.className | quote }}
+  rules:
+    - host: {{ .Values.global.clusterHost | default (index .Values.ingress.hosts 0).host }}
+      http:
+        paths:
+          - path: {{ $rexecPath | quote }}
+            pathType: Prefix
+            backend:
+              service:
+                name: rexec-deployment-api
+                port:
+                  number: {{ .Values.service.port }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+{{- end }}

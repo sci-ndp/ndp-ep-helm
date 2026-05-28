@@ -1,0 +1,35 @@
+enabled: true
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: "yutianqin/scidx-rexec-broker"
+  tag: "latest"
+  pullPolicy: Always
+
+replicaCount: 1
+
+command:
+  - sh
+  - -c
+  - python run_broker.py --client_port 5559 --server_port 5560 --control_port 5561 --debug
+
+ports:
+  client: 5559
+  server: 5560
+  control: 5561
+
+service:
+  external:
+    enabled: true
+    type: NodePort
+    clientNodePort: 30001
+    controlNodePort: 30002
+  internal:
+    enabled: true
+    type: ClusterIP
+
+resources: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}

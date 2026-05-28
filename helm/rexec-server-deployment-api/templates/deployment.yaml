@@ -1,0 +1,98 @@
+{{- $imageRepo := required "deploymentApi.image.repository is required" .Values.image.repository -}}
+{{- $useInCluster := .Values.inClusterConfig.enabled -}}
+{{- if and (not $useInCluster) (not .Values.kubeconfig.existingSecret) (not .Values.kubeconfig.createSecret) -}}
+{{- fail "deploymentApi.kubeconfig.existingSecret or deploymentApi.kubeconfig.createSecret must be set unless inClusterConfig.enabled=true" -}}
+{{- end -}}
+{{- $kubeconfigSecret := default (include "deployment-api.kubeconfigSecretName" .) .Values.kubeconfig.existingSecret -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rexec-deployment-api
+  labels:
+    {{- include "deployment-api.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "deployment-api.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "deployment-api.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- if and .Values.inClusterConfig.enabled (or .Values.serviceAccount.create .Values.serviceAccount.name) }}
+      serviceAccountName: {{ include "deployment-api.serviceAccountName" . }}
+      {{- end }}
+      {{- if .Values.global.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: rexec-deployment-api
+          image: "{{ $imageRepo }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          envFrom:
+            - configMapRef:
+                name: federation-config
+                optional: true
+          env:
+            {{- if $useInCluster }}
+            - name: REXEC_USE_IN_CLUSTER_CONFIG
+              value: "true"
+            {{- else }}
+            - name: REXEC_KUBECONFIG_MOUNT_PATH
+              value: {{ .Values.kubeconfig.mountPath | quote }}
+            {{- end }}
+            - name: REXEC_NAMESPACE_PREFIX
+              value: {{ .Values.env.rexecServerNamespacePrefix | quote }}
+            - name: REXEC_BROKER_SERVICE_NAME
+              value: {{ .Values.env.brokerServiceName | quote }}
+            - name: REXEC_BROKER_NAMESPACE
+              value: {{ default .Release.Namespace .Values.env.brokerNamespace | quote }}
+            - name: REXEC_BROKER_PORT
+              value: {{ .Values.env.brokerPort | quote }}
+            - name: REXEC_BROKER_EXTERNAL_HOST
+              value: {{ .Values.global.clusterPublicHost | default .Values.global.clusterHost | quote }}
+            - name: REXEC_BROKER_EXTERNAL_PORT
+              value: {{ .Values.env.brokerExternalPort | quote }}
+            - name: APP_ROOT_PATH
+              value: {{ .Values.env.rootPath | quote }}
+            {{- with .Values.extraEnv }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
+          {{- if not $useInCluster }}
+          volumeMounts:
+            - name: kubeconfig
+              mountPath: {{ .Values.kubeconfig.mountPath | quote }}
+              subPath: {{ .Values.kubeconfig.secretKey | quote }}
+              readOnly: true
+          {{- end }}
+          {{- if .Values.resources }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          {{- end }}
+      {{- if not $useInCluster }}
+      volumes:
+        - name: kubeconfig
+          secret:
+            secretName: {{ $kubeconfigSecret }}
+            items:
+              - key: {{ .Values.kubeconfig.secretKey | quote }}
+                path: {{ .Values.kubeconfig.secretKey | quote }}
+      {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

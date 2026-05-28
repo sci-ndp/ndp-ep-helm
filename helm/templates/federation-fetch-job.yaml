@@ -41,6 +41,8 @@ spec:
               value: {{ .Release.Namespace | quote }}
             - name: CLUSTER_HOST
               value: {{ .Values.global.clusterHost | quote }}
+            - name: CLUSTER_PUBLIC_HOST
+              value: {{ .Values.global.clusterPublicHost | quote }}
             - name: CLUSTER_KAFKA_PORT
               value: {{ .Values.global.clusterKafkaPort | default 31090 | toString | quote }}
             - name: CLUSTER_CKAN_PATH
@@ -75,6 +77,7 @@ spec:
               REALM_NAME="$(echo "$CONFIG_JSON"     | jq -r '.realm_name     // "NDP"')"
               STREAMING="$(echo "$CONFIG_JSON"      | jq -r '.streaming      // "false"')"
               JHUB="$(echo "$CONFIG_JSON"           | jq -r '.jhub            // "false"')"
+              REXEC="$(echo "$CONFIG_JSON"          | jq -r '.rexec           // "false"')"
               GROUP_NAME="$(echo "$CONFIG_JSON"     | jq -r '.group_name     // ""')"
               POC="$(echo "$CONFIG_JSON"            | jq -r '.poc             // ""')"
               PUBLIC="$(echo "$CONFIG_JSON"         | jq -r '.public          // "true"')"
@@ -85,6 +88,9 @@ spec:
               # ------------------------------------------------------------------
               # 3. Derive values
               # ------------------------------------------------------------------
+              # Fall back to CLUSTER_HOST when deployer did not supply a public host
+              CLUSTER_PUBLIC_HOST="${CLUSTER_PUBLIC_HOST:-$CLUSTER_HOST}"
+
               KAFKA_CONNECTION="False"
               if [ "$STREAMING" = "true" ] || [ "$STREAMING" = "True" ]; then
                 KAFKA_CONNECTION="True"
@@ -93,6 +99,11 @@ spec:
               USE_JUPYTERLAB="False"
               if [ "$JHUB" = "true" ] || [ "$JHUB" = "True" ]; then
                 USE_JUPYTERLAB="True"
+              fi
+
+              REXEC_CONNECTION="False"
+              if [ "$REXEC" = "true" ] || [ "$REXEC" = "True" ]; then
+                REXEC_CONNECTION="True"
               fi
 
               PRE_CKAN_ENABLED="False"
@@ -122,7 +133,7 @@ spec:
               JHUB_CALLBACK_URL="${JUPYTER_URL}/hub/oauth_callback"
               JHUB_LOGOUT_URL="${KC_BASE}/logout?post_logout_redirect_uri=${JUPYTER_URL}&client_id=${CLIENT_ID}"
 
-              echo "==> Parsed: EP_NAME=${EP_NAME} ORGANIZATION=${ORGANIZATION} KAFKA_CONNECTION=${KAFKA_CONNECTION} USE_JUPYTERLAB=${USE_JUPYTERLAB}"
+              echo "==> Parsed: EP_NAME=${EP_NAME} ORGANIZATION=${ORGANIZATION} KAFKA_CONNECTION=${KAFKA_CONNECTION} USE_JUPYTERLAB=${USE_JUPYTERLAB} REXEC_CONNECTION=${REXEC_CONNECTION}"
 
               # ------------------------------------------------------------------
               # 4. Write federation-config ConfigMap (all EP API env vars)
@@ -152,6 +163,8 @@ spec:
                 KAFKA_CONNECTION: "${KAFKA_CONNECTION}"
                 KAFKA_HOST: "${CLUSTER_HOST}"
                 KAFKA_PORT: "${CLUSTER_KAFKA_PORT}"
+                REXEC_CONNECTION: "${REXEC_CONNECTION}"
+                REXEC_DEPLOYMENT_API_URL: "https://${CLUSTER_PUBLIC_HOST}/rexec/"
                 METRICS_INTERVAL_SECONDS: "3300"
                 METRICS_ENDPOINT: "${FEDERATION_URL}/metrics"
                 USE_JUPYTERLAB: "${USE_JUPYTERLAB}"
