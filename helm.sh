@@ -17,6 +17,7 @@ STORAGE_CLASS=""
 INGRESS_CLASS=""
 NDP_ENV="prod"
 NAMESPACE="ndp-ep"
+RELEASE_NAME=""
 
 # --------------------------------------------------------------------------
 # Parse flags
@@ -30,9 +31,18 @@ while [[ $# -gt 0 ]]; do
     --ingress-class)  INGRESS_CLASS="$2";         shift 2 ;;
     --env)            NDP_ENV="$2";               shift 2 ;;
     --namespace)      NAMESPACE="$2";             shift 2 ;;
+    --release-name)   RELEASE_NAME="$2";          shift 2 ;;
     *) echo "Unknown flag: $1"; exit 1 ;;
   esac
 done
+
+# Default the release name to the namespace so that parallel deployments
+# (e.g. a "test" namespace alongside "prod") never share a Helm release
+# name. This matters because some sub-charts (rexec-server-deployment-api)
+# create cluster-scoped resources (ClusterRole/ClusterRoleBinding) whose
+# names are derived from the release name only, not the namespace — two
+# releases sharing a name would collide on those cluster-scoped objects.
+[[ -z "$RELEASE_NAME" ]] && RELEASE_NAME="$NAMESPACE"
 
 # --------------------------------------------------------------------------
 # Validate mandatory flags
@@ -46,7 +56,7 @@ MISSING=()
 if [[ ${#MISSING[@]} -gt 0 ]]; then
   echo "Error: missing required flags: ${MISSING[*]}"
   echo ""
-  echo "Usage: $0 --config-id <id> --host <host> --storage-class <class> --ingress-class <class> [--public-host <domain>] [--env test] [--namespace <ns>]"
+  echo "Usage: $0 --config-id <id> --host <host> --storage-class <class> --ingress-class <class> [--public-host <domain>] [--env test] [--namespace <ns>] [--release-name <name>]"
   exit 1
 fi
 
@@ -97,7 +107,7 @@ helm repo update
 # --------------------------------------------------------------------------
 # Deploy
 # --------------------------------------------------------------------------
-helm upgrade --install ndp-ep ndp-ep/ndp-ep-helm \
+helm upgrade --install "${RELEASE_NAME}" ndp-ep/ndp-ep-helm \
   -n "${NAMESPACE}" --create-namespace \
   --set global.env="${NDP_ENV}" \
   --set federation.configId="${CONFIG_ID}" \
