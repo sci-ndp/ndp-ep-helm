@@ -24,6 +24,7 @@ bash <(curl -sL https://raw.githubusercontent.com/sci-ndp/ndp-ep-helm/main/helm.
 | `--public-host` | no | Publicly reachable domain (e.g. a reverse-proxy). Used for `REXEC_DEPLOYMENT_API_URL`. Defaults to `--host` |
 | `--env` | no | `test` to use the test federation and test IDP. Defaults to `prod` |
 | `--namespace` | no | Kubernetes namespace. Defaults to `ndp-ep` |
+| `--release-name` | no | Helm release name. Defaults to the namespace value — keep this unique per namespace, since some sub-charts create cluster-scoped resources named after the release |
 
 ## Optional sub-charts
 
