@@ -3,7 +3,43 @@ entries:
   ndp-ep-helm:
   - apiVersion: v2
     appVersion: 0.1.0
-    created: '2026-05-28T18:45:38.799821583Z'
+    created: "2026-08-25T17:46:48.118894301Z"
+    dependencies:
+    - alias: ndp-ep-api
+      condition: ndp-ep-api.enabled
+      name: ndp-ep-api
+      repository: file://./ndp-ep-api
+      version: 0.13.0
+    - condition: ckan.enabled
+      name: ckan
+      repository: file://./ckan
+      version: v4.0.2
+    - condition: ndp-jupyterhub.enabled
+      name: ndp-jupyterhub
+      repository: file://./ndp-jupyterhub
+      version: 0.1.2
+    - condition: kafka-kraft.enabled
+      name: kafka-kraft
+      repository: file://./kafka-kraft
+      version: 0.1.1
+    - condition: rexec-broker.enabled
+      name: rexec-broker
+      repository: file://./rexec-broker
+      version: 0.1.0
+    - condition: rexec-server-deployment-api.enabled
+      name: rexec-server-deployment-api
+      repository: file://./rexec-server-deployment-api
+      version: 0.1.1
+    description: Helm chart for NDP-Endpoint
+    digest: 39b47864b4f68a7e9811fcfcd49d0220e87b6a8f5be02ec82a672aa760f81c15
+    name: ndp-ep-helm
+    type: application
+    urls:
+    - https://github.com/sci-ndp/ndp-ep-helm/releases/download/ndp-ep-helm-0.1.0/ndp-ep-helm-0.1.0.tgz
+    version: 0.1.0
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-05-28T18:45:38.799821583Z"
     dependencies:
     - alias: ndp-ep-api
       condition: ndp-ep-api.enabled
@@ -39,7 +75,7 @@ entries:
     version: 0.0.9
   - apiVersion: v2
     appVersion: 0.1.0
-    created: '2026-04-29T20:37:33.55864302Z'
+    created: "2026-04-29T20:37:33.55864302Z"
     dependencies:
     - alias: ndp-ep-api
       condition: ndp-ep-api.enabled
@@ -68,7 +104,7 @@ entries:
     version: 0.0.8
   - apiVersion: v2
     appVersion: 0.1.0
-    created: '2026-04-23T02:22:03.527166015Z'
+    created: "2026-04-23T02:22:03.527166015Z"
     dependencies:
     - alias: ndp-ep-api
       condition: ndp-ep-api.enabled
@@ -97,7 +133,7 @@ entries:
     version: 0.0.7
   - apiVersion: v2
     appVersion: 0.1.0
-    created: '2026-04-23T01:50:37.782761479Z'
+    created: "2026-04-23T01:50:37.782761479Z"
     dependencies:
     - alias: ndp-ep-api
       condition: ndp-ep-api.enabled
@@ -124,4 +160,4 @@ entries:
     urls:
     - https://github.com/sci-ndp/ndp-ep-helm/releases/download/ndp-ep-helm-0.0.6/ndp-ep-helm-0.0.6.tgz
     version: 0.0.6
-generated: '2026-05-28T18:45:38.799847561Z'
+generated: "2026-08-25T17:46:48.118905778Z"
