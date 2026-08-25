@@ -2,7 +2,7 @@ apiVersion: v2
 name: ndp-ep-helm
 description: Helm chart for NDP-Endpoint
 type: application
-version: 0.0.9
+version: 0.1.0
 appVersion: "0.1.0"
 dependencies:
   # NDP Endpoint API
@@ -20,7 +20,7 @@ dependencies:
   
   # NDP Generic JupyterHub
   - name: ndp-jupyterhub
-    version: "0.1.1"
+    version: "0.1.2"
     repository: "file://./ndp-jupyterhub"
     condition: ndp-jupyterhub.enabled
 
@@ -38,6 +38,6 @@ dependencies:
 
   # Remote Execution Server Deployment API
   - name: rexec-server-deployment-api
-    version: "0.1.0"
+    version: "0.1.1"
     repository: "file://./rexec-server-deployment-api"
     condition: rexec-server-deployment-api.enabled

@@ -41,7 +41,7 @@ KEYCLOAK_URL = os.environ.get('NDP_KEYCLOAK_URL', 'https://idp.nationaldataplatf
 KEYCLOAK_REALM = os.environ.get('NDP_KEYCLOAK_REALM', 'NDP').strip('/')
 OAUTH_BASE = f"{KEYCLOAK_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect"
 
-NDP_EXT_VERSION = '0.0.22+aa2458c'
+NDP_EXT_VERSION = '0.0.23+37ebe57'
 
 USER_PERSISTENT_STORAGE_FOLDER = "_User-Persistent-Storage"
 STORAGE_CLASS = os.environ.get('PVC_STORAGE_CLASS', 'microk8s-hostpath')
