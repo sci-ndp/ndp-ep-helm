@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ndp-ep-helm</title>
+<meta name="description" content="Helm chart repository for the NDP Endpoint (EP) stack.">
+<script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+<style>
+  :root {
+    color-scheme: light dark;
+    --bg: #ffffff;
+    --bg-raised: #f6f7f9;
+    --border: #e2e4e9;
+    --text: #1c1e26;
+    --text-muted: #5b616e;
+    --accent: #2f6feb;
+    --accent-bg: #eef3fe;
+    --code-bg: #f0f1f4;
+    --badge-bg: #e8ecf3;
+    --shadow: 0 1px 2px rgba(20, 22, 30, 0.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #14161c;
+      --bg-raised: #1b1e26;
+      --border: #2b2f3a;
+      --text: #e7e9ee;
+      --text-muted: #9aa0ad;
+      --accent: #6ea0ff;
+      --accent-bg: #1c2740;
+      --code-bg: #1c1f28;
+      --badge-bg: #232734;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.55 -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+  }
+  main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 64px 24px 80px;
+  }
+  header h1 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 26px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+  header h1 .helm-icon { font-size: 24px; }
+  header p.tagline {
+    margin: 0 0 28px;
+    color: var(--text-muted);
+    font-size: 15px;
+  }
+  .add-box {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 40px;
+  }
+  .add-box code {
+    flex: 1;
+    font: 13px/1.4 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    overflow-x: auto;
+    white-space: nowrap;
+    color: var(--text);
+  }
+  .copy-btn {
+    flex-shrink: 0;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text-muted);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+    cursor: pointer;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--accent); }
+  .copy-btn.copied { color: var(--accent); border-color: var(--accent); }
+
+  section.chart {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 22px;
+    margin-bottom: 20px;
+    background: var(--bg-raised);
+    box-shadow: var(--shadow);
+  }
+  .chart-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .chart-name {
+    font-size: 17px;
+    font-weight: 600;
+  }
+  .badge {
+    display: inline-block;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 2px 9px;
+    border-radius: 999px;
+    background: var(--accent-bg);
+    color: var(--accent);
+    white-space: nowrap;
+  }
+  .chart-desc {
+    color: var(--text-muted);
+    margin: 8px 0 12px;
+  }
+  .chart-meta {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    font-size: 13px;
+    color: var(--text-muted);
+    margin-bottom: 10px;
+  }
+  .chart-meta a { color: inherit; }
+  .chart-meta strong { color: var(--text); font-weight: 600; }
+
+  details { margin-top: 6px; }
+  summary {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--accent);
+    user-select: none;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  th, td {
+    text-align: left;
+    padding: 7px 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+  td.badge-cell .badge { background: var(--badge-bg); color: var(--text-muted); }
+  td a { color: var(--accent); text-decoration: none; }
+  td a:hover { text-decoration: underline; }
+
+  #status { color: var(--text-muted); font-size: 14px; }
+  #error-box {
+    display: none;
+    border: 1px solid var(--border);
+    background: var(--bg-raised);
+    border-radius: 10px;
+    padding: 16px 18px;
+    font-size: 14px;
+    color: var(--text-muted);
+  }
+  #error-box a { color: var(--accent); }
+
+  footer {
+    margin-top: 48px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+    color: var(--text-muted);
+    font-size: 13px;
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  footer a { color: inherit; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1><span class="helm-icon">⎈</span> ndp-ep-helm</h1>
+    <p class="tagline">Helm chart repository for the NDP Endpoint (EP) stack.</p>
+  </header>
+
+  <div class="add-box">
+    <code id="add-cmd">helm repo add ndp-ep https://sci-ndp.github.io/ndp-ep-helm</code>
+    <button class="copy-btn" id="copy-btn" type="button">Copy</button>
+  </div>
+
+  <p id="status">Loading chart index…</p>
+  <div id="charts"></div>
+
+  <div id="error-box">
+    Couldn't load or parse <code>index.yaml</code> automatically.
+    You can view it directly at
+    <a href="index.yaml">index.yaml</a>, or add this repo with:
+    <br><code>helm repo add ndp-ep https://sci-ndp.github.io/ndp-ep-helm</code>
+  </div>
+
+  <footer>
+    <span>Published from <a href="https://github.com/sci-ndp/ndp-ep-helm">sci-ndp/ndp-ep-helm</a></span>
+    <span><a href="index.yaml">raw index.yaml</a></span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  const copyBtn = document.getElementById('copy-btn');
+  copyBtn.addEventListener('click', function () {
+    const text = document.getElementById('add-cmd').textContent;
+    const done = function () {
+      copyBtn.textContent = 'Copied';
+      copyBtn.classList.add('copied');
+      setTimeout(function () {
+        copyBtn.textContent = 'Copy';
+        copyBtn.classList.remove('copied');
+      }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(done);
+    } else {
+      done();
+    }
+  });
+
+  function fmtDate(iso) {
+    if (!iso) return '—';
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toISOString().slice(0, 10);
+  }
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+
+  fetch('index.yaml', { cache: 'no-store' })
+    .then(function (res) {
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.text();
+    })
+    .then(function (text) {
+      const data = jsyaml.load(text);
+      const entries = (data && data.entries) || {};
+      const names = Object.keys(entries);
+      if (names.length === 0) throw new Error('No chart entries found');
+
+      const statusEl = document.getElementById('status');
+      const container = document.getElementById('charts');
+
+      names.forEach(function (name) {
+        const versions = entries[name].slice().sort(function (a, b) {
+          return new Date(b.created || 0) - new Date(a.created || 0);
+        });
+        const latest = versions[0];
+
+        const section = document.createElement('section');
+        section.className = 'chart';
+
+        const rowsHtml = versions.map(function (v) {
+          const url = (v.urls && v.urls[0]) || '';
+          return '<tr>' +
+            '<td class="badge-cell"><span class="badge">' + escapeHtml(v.version) + '</span></td>' +
+            '<td>' + escapeHtml(v.appVersion || '—') + '</td>' +
+            '<td>' + fmtDate(v.created) + '</td>' +
+            '<td>' + (url ? '<a href="' + escapeHtml(url) + '">.tgz</a>' : '—') + '</td>' +
+            '</tr>';
+        }).join('');
+
+        section.innerHTML =
+          '<div class="chart-head">' +
+            '<span class="chart-name">' + escapeHtml(name) + '</span>' +
+            '<span class="badge">' + escapeHtml(latest.version) + '</span>' +
+          '</div>' +
+          '<p class="chart-desc">' + escapeHtml(latest.description || '') + '</p>' +
+          '<div class="chart-meta">' +
+            '<span><strong>App version</strong> ' + escapeHtml(latest.appVersion || '—') + '</span>' +
+            '<span><strong>Released</strong> ' + fmtDate(latest.created) + '</span>' +
+            (versions.length > 1 ? '<span><strong>' + versions.length + '</strong> versions</span>' : '') +
+          '</div>' +
+          (versions.length > 1
+            ? '<details><summary>Version history</summary>' +
+                '<table><thead><tr><th>Version</th><th>App version</th><th>Released</th><th>Package</th></tr></thead>' +
+                '<tbody>' + rowsHtml + '</tbody></table>' +
+              '</details>'
+            : '');
+
+        container.appendChild(section);
+      });
+
+      statusEl.remove();
+    })
+    .catch(function (err) {
+      document.getElementById('status').remove();
+      document.getElementById('error-box').style.display = 'block';
+      console.error('Failed to render chart index:', err);
+    });
+})();
+</script>
+</body>
+</html>
