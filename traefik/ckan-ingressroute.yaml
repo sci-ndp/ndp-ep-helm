@@ -1,0 +1,42 @@
+# Optional: serve CKAN at /ckan when the cluster's ingress controller is Traefik.
+#
+# The chart's CKAN Ingress uses an ingress-nginx regex path (/ckan(/|$)(.*)) with
+# rewrite-target to strip the /ckan prefix. Traefik matches that path literally,
+# so /ckan returns 404. This adds a Traefik route for /ckan that strips the prefix
+# before forwarding to the CKAN service. The chart's Ingress is left as is.
+#
+# Not needed with ingress-nginx. Not managed by Helm: apply it after installing
+# the chart, and delete it yourself if you uninstall.
+
+# ```bash
+# export NAMESPACE=ndp-ep-test HOST=ndp-ep-test.example.com
+# envsubst '${NAMESPACE} ${HOST}' < traefik/ckan-ingressroute.yaml | kubectl apply -f -
+# curl -s "http://${HOST}/ckan/api/3/action/status_show"
+# ```
+
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: ckan-stripprefix
+  namespace: ${NAMESPACE}
+spec:
+  stripPrefix:
+    prefixes:
+      - /ckan
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: ckan
+  namespace: ${NAMESPACE}
+spec:
+  entryPoints: [web, websecure]
+  routes:
+    - match: Host(`${HOST}`) && PathPrefix(`/ckan`)
+      kind: Rule
+      middlewares:
+        - name: ckan-stripprefix
+      services:
+        - name: ckan
+          port: 80
