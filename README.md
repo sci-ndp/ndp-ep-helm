@@ -25,6 +25,16 @@ bash <(curl -sL https://raw.githubusercontent.com/sci-ndp/ndp-ep-helm/main/helm.
 | `--env` | no | `test` to use the test federation and test IDP. Defaults to `prod` |
 | `--namespace` | no | Kubernetes namespace. Defaults to `ndp-ep` |
 | `--release-name` | no | Helm release name. Defaults to the namespace value — keep this unique per namespace, since some sub-charts create cluster-scoped resources named after the release |
+| `--ndp-token-file` | no | File holding the NDP access token of an admin of the Endpoint, for unattended runs. Without it the script signs you in (see below) |
+| `--login-client-id` | no | Public client of the identity provider used to sign in with the device flow. Defaults to `ep-installer-testing` with `--env test`; production has none yet. Also read from `NDP_LOGIN_CLIENT_ID` |
+
+## Signing in and the Federation configuration
+
+Federation 2.0.0 and later give an Endpoint's configuration (`GET /ep/{config-id}`) only to an admin of that Endpoint. `helm.sh` therefore reads it with your NDP access token: from `--ndp-token-file`, or by signing you in with the device flow (it prints a link and a code to open in any browser). When there is no login client (production today) and no token file, it asks without a token, which older Federations accept.
+
+The chart's pre-install Job needs the same configuration inside the cluster. `helm.sh` puts what it read into the Secret `ndp-ep-federation-doc` in the release namespace (this needs `kubectl` on the machine running the script) and passes its name as `federation.docSecret`; the Job reads it and deletes it. Without that Secret the Job fetches the configuration itself, without a token, which only Federations before 2.0.0 accept.
+
+To deploy the chart from a checkout of this repository instead of the published one, run `./helm.local.sh` with the same flags.
 
 ## Optional sub-charts
 

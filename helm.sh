@@ -284,15 +284,46 @@ echo "==> jupyterhub=${JHUB}       -> ndp-jupyterhub.enabled=${JHUB_ENABLED}"
 echo "==> rexec=${REXEC}           -> rexec-broker.enabled=${REXEC_ENABLED}, rexec-server-deployment-api.enabled=${REXEC_ENABLED}"
 
 # --------------------------------------------------------------------------
-# Add/update Helm repo
+# Hand the fetched configuration to the chart's federation-fetch Job
 # --------------------------------------------------------------------------
-helm repo add ndp-ep https://sci-ndp.github.io/ndp-ep-helm
-helm repo update
+# The chart's pre-install/pre-upgrade Job writes the configuration into the
+# cluster. It used to fetch GET /ep/{config_id} again, without a token, which
+# Federation 2.0.0 refuses (401). The configuration this script just read with
+# the caller's token goes into a Secret in the release namespace instead; the
+# Job reads it from there and deletes it. Without kubectl (or with a chart
+# older than 0.2.0, which ignores federation.docSecret) the Job fetches the
+# configuration itself, as before, which works only with Federations before
+# 2.0.0.
+DOC_SECRET_NAME="ndp-ep-federation-doc"
+DOC_SECRET_ARGS=()
+if command -v kubectl >/dev/null 2>&1; then
+  printf '%s' "$DOC" > "$AUTH_DIR/config.json"
+  kubectl create namespace "${NAMESPACE}" --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+  kubectl create secret generic "${DOC_SECRET_NAME}" -n "${NAMESPACE}" \
+    --from-file="config.json=${AUTH_DIR}/config.json" \
+    --dry-run=client -o yaml | kubectl apply -f - >/dev/null
+  rm -f "$AUTH_DIR/config.json"
+  DOC_SECRET_ARGS=(--set "federation.docSecret=${DOC_SECRET_NAME}")
+  echo "==> Configuration handed to the chart in Secret ${NAMESPACE}/${DOC_SECRET_NAME}"
+else
+  echo "==> kubectl not found: the chart's Job will fetch the configuration without a token (Federation 2.0.0 and later refuse it)"
+fi
+
+# --------------------------------------------------------------------------
+# Chart: the published one, or a local checkout (NDP_EP_CHART=./helm)
+# --------------------------------------------------------------------------
+CHART="${NDP_EP_CHART:-ndp-ep/ndp-ep-helm}"
+if [[ -d "$CHART" ]]; then
+  helm dep update "$CHART"
+else
+  helm repo add ndp-ep https://sci-ndp.github.io/ndp-ep-helm
+  helm repo update
+fi
 
 # --------------------------------------------------------------------------
 # Deploy
 # --------------------------------------------------------------------------
-helm upgrade --install "${RELEASE_NAME}" ndp-ep/ndp-ep-helm \
+helm upgrade --install "${RELEASE_NAME}" "${CHART}" \
   -n "${NAMESPACE}" --create-namespace \
   --set global.env="${NDP_ENV}" \
   --set federation.configId="${CONFIG_ID}" \
@@ -303,4 +334,5 @@ helm upgrade --install "${RELEASE_NAME}" ndp-ep/ndp-ep-helm \
   --set kafka-kraft.enabled="${KAFKA_ENABLED}" \
   --set ndp-jupyterhub.enabled="${JHUB_ENABLED}" \
   --set rexec-broker.enabled="${REXEC_ENABLED}" \
-  --set rexec-server-deployment-api.enabled="${REXEC_ENABLED}"
+  --set rexec-server-deployment-api.enabled="${REXEC_ENABLED}" \
+  ${DOC_SECRET_ARGS[@]+"${DOC_SECRET_ARGS[@]}"}

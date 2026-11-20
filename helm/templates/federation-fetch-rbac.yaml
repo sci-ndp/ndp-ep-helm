@@ -26,10 +26,11 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     verbs: ["create", "get", "update", "patch"]
-  # Write jupyterhub-secret (OAuth client_id / client_secret / callback URLs)
+  # Write jupyterhub-secret (OAuth client_id / client_secret / callback URLs);
+  # read and delete the configuration helm.sh hands over (federation.docSecret)
   - apiGroups: [""]
     resources: ["secrets"]
-    verbs: ["create", "get", "update", "patch"]
+    verbs: ["create", "get", "update", "patch", "delete"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
