@@ -12,6 +12,12 @@ federation:
   configId: ""
   # Override to use a custom federation endpoint; leave empty to derive from global.env.
   url: ""
+  # Name of a Secret in the release namespace holding the Endpoint configuration
+  # as config.json. helm.sh fetches it with the deployer's NDP token and sets this;
+  # the federation-fetch Job then reads the Secret (and deletes it) instead of
+  # calling GET /ep/{configId} without a token, which Federation 2.0.0 refuses.
+  # Empty: the Job fetches the configuration itself (Federations before 2.0.0).
+  docSecret: ""
 
 
 # ==============================================================================

@@ -53,6 +53,8 @@ spec:
               value: {{ include "ndp-ep.clusterIdpHost" . | quote }}
             - name: RELEASE_NAMESPACE
               value: {{ .Release.Namespace | quote }}
+            - name: FEDERATION_DOC_SECRET
+              value: {{ .Values.federation.docSecret | default "" | quote }}
           command:
             - /bin/bash
             - -c
@@ -62,8 +64,26 @@ spec:
               # ------------------------------------------------------------------
               # 1. Fetch federation config
               # ------------------------------------------------------------------
-              echo "==> Fetching federation config: ${FEDERATION_URL}/ep/${CONFIG_ID}"
-              CONFIG_JSON="$(curl -fsS "${FEDERATION_URL}/ep/${CONFIG_ID}")"
+              # helm.sh reads the configuration with the deployer's NDP token
+              # and hands it over in a Secret (federation.docSecret), because
+              # Federation 2.0.0 answers GET /ep/{id} only to an admin of the
+              # Endpoint. Without that Secret, fetch it here as before (works
+              # only with Federations before 2.0.0).
+              CONFIG_JSON=""
+              if [ -n "${FEDERATION_DOC_SECRET}" ]; then
+                CONFIG_JSON="$(kubectl get secret "${FEDERATION_DOC_SECRET}" -n "${NAMESPACE}" \
+                  -o jsonpath='{.data.config\.json}' 2>/dev/null | base64 -d 2>/dev/null || true)"
+              fi
+              if [ -n "$CONFIG_JSON" ]; then
+                echo "==> Using the federation config from Secret ${FEDERATION_DOC_SECRET}"
+                kubectl delete secret "${FEDERATION_DOC_SECRET}" -n "${NAMESPACE}" --ignore-not-found >/dev/null || true
+              else
+                echo "==> Fetching federation config: ${FEDERATION_URL}/ep/${CONFIG_ID}"
+                CONFIG_JSON="$(curl -fsS "${FEDERATION_URL}/ep/${CONFIG_ID}")" || {
+                  echo "ERROR: could not fetch ${FEDERATION_URL}/ep/${CONFIG_ID}. Federation 2.0.0 and later answer only to an admin of the Endpoint: deploy with helm.sh, which hands the configuration over in federation.docSecret." >&2
+                  exit 1
+                }
+              fi
 
               # ------------------------------------------------------------------
               # 2. Parse federation fields
